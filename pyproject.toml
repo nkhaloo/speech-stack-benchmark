@@ -38,15 +38,18 @@ cpu = [
 # CPU diarization with pyannote (slow but works; pulls torch CPU build on mac/win).
 cpu-pyannote = [
     "pyannote.audio>=3.3,<4",
-    "torch>=2.2",
-    "torchaudio>=2.2",
+    "torch>=2.2,<2.7",
+    "torchaudio>=2.2,<2.7",
 ]
 # GPU track (Linux + NVIDIA). Default pip torch wheels ship CUDA on Linux.
+# torch/torchaudio are capped: pyannote.audio 3.x + speechbrain import
+# torchaudio.AudioMetaData, which torchaudio >=2.9 removed. Do not remove the
+# upper bound without also moving pyannote to a version that no longer needs it.
 gpu = [
     "faster-whisper>=1.1",
     "pyannote.audio>=3.3,<4",
-    "torch>=2.2",
-    "torchaudio>=2.2",
+    "torch>=2.2,<2.7",
+    "torchaudio>=2.2,<2.7",
     "nvidia-ml-py>=12.0",
     "matplotlib>=3.7",
     "requests>=2.31",
