@@ -13,7 +13,6 @@ before transferring any data, so it is instant and downloads nothing.
     python scripts/check_mdc_access.py
 """
 
-import inspect
 import os
 from pathlib import Path
 
@@ -24,34 +23,21 @@ from speech_benchmark.datasets.sources import CV_LANG, _find_cv_tsv
 ROOT = project_root()
 
 
-def _probe_access(dataset_id: str) -> tuple[str, str]:
-    """Return (status, detail) for a dataset id without downloading it."""
+def _probe_access(dataset_id: str, download_dir: Path) -> tuple[str, str]:
+    """Return (status, detail) for a dataset id without downloading it.
+
+    Fetching the download plan performs the authenticated, T&C-gated API
+    request but transfers no data; ``target_filepath`` is only where a real
+    download would eventually be written, so a throwaway path is fine.
+    """
     try:
         from datacollective.download import _get_download_plan
     except Exception as e:  # pragma: no cover - depends on SDK internals
         return "ERROR", f"cannot import download-plan helper: {e!r}"
 
-    # Fill the plan function's parameters by name from what we know, so this
-    # keeps working if the SDK signature shifts slightly.
-    api_key = os.environ.get("MDC_API_KEY")
-    known = {
-        "dataset_id": dataset_id, "dataset": dataset_id, "id": dataset_id,
-        "api_key": api_key, "token": api_key, "key": api_key,
-    }
-    sig = inspect.signature(_get_download_plan)
-    kwargs = {}
-    missing = []
-    for name, param in sig.parameters.items():
-        if name in known and known[name] is not None:
-            kwargs[name] = known[name]
-        elif param.default is inspect.Parameter.empty:
-            missing.append(name)
-    if missing:
-        return "ERROR", (f"cannot auto-fill required plan args {missing}; "
-                         f"signature is {sig}")
-
+    target = download_dir / dataset_id / "_access_probe.tar.gz"
     try:
-        _get_download_plan(**kwargs)
+        _get_download_plan(dataset_id, target)
         return "ACCESS OK", "terms accepted; ready to download"
     except PermissionError as e:
         return "TERMS NOT ACCEPTED", str(e).splitlines()[0]
@@ -76,7 +62,7 @@ def main() -> None:
                 _find_cv_tsv(extract_dir, split) is not None:
             status, detail = "ALREADY DOWNLOADED", str(extract_dir)
         else:
-            status, detail = _probe_access(dataset_id)
+            status, detail = _probe_access(dataset_id, download_dir)
         cv_lang = CV_LANG.get(lang, lang)
         print(f"{lang:<{width}} ({cv_lang:<5}) {dataset_id}  ->  {status}")
         print(f"{'':<{width}}         {detail}")
