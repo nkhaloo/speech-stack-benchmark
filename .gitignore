@@ -32,3 +32,6 @@ Thumbs.db
 # Local secrets (HF token etc.) — never commit
 .env
 .env.*
+
+# Claude Code personal settings (not shared)
+.claude/settings.local.json
