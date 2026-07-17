@@ -248,7 +248,10 @@ class CommonVoiceMDCSource:
                 f"nor validated.tsv under {root}"
             )
 
-        by_speaker: dict[str, list[dict[str, str]]] = {}
+        # Group rows by speaker without touching the filesystem: validated.tsv
+        # can hold millions of rows, so audio is resolved only for the handful
+        # of speakers actually chosen below.
+        by_speaker: dict[str, list[tuple[str, str]]] = {}
         with tsv_path.open(encoding="utf-8", newline="") as f:
             for row in csv.DictReader(f, delimiter="\t"):
                 cid = (row.get("client_id") or "").strip()
@@ -256,11 +259,7 @@ class CommonVoiceMDCSource:
                 relpath = (row.get("path") or "").strip()
                 if not cid or not text or not relpath:
                     continue
-                audio_path = _find_cv_audio(tsv_path.parent, root, relpath)
-                if audio_path is not None:
-                    row["_audio_path"] = str(audio_path)
-                    row["_text"] = text
-                    by_speaker.setdefault(cid, []).append(row)
+                by_speaker.setdefault(cid, []).append((relpath, text))
 
         eligible = [cid for cid, rows in by_speaker.items()
                     if len(rows) >= self.min_clips]
@@ -278,17 +277,19 @@ class CommonVoiceMDCSource:
         for s_idx, cid in enumerate(chosen):
             spk = f"{language}_spk{s_idx:02d}"
             clips: list[Clip] = []
-            for row in by_speaker[cid][:60]:
-                audio_path = Path(row["_audio_path"])
+            for relpath, text in by_speaker[cid][:60]:
+                audio_path = _find_cv_audio(tsv_path.parent, root, relpath)
+                if audio_path is None:
+                    continue
 
                 def _loader(audio_path: Path = audio_path) -> np.ndarray:
                     audio, _ = load_audio(audio_path, SR)
                     return audio
 
                 clips.append(Clip(
-                    clip_id=f"mdc:{cv_lang}:{row['path']}",
+                    clip_id=f"mdc:{cv_lang}:{relpath}",
                     speaker_id=spk,
-                    text=row["_text"],
+                    text=text,
                     _loader=_loader,
                 ))
             out[spk] = clips

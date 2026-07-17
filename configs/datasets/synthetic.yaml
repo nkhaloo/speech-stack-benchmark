@@ -16,7 +16,10 @@ source_kwargs:
     ar: cmqinoh7z00wsnr07v5ixz5uo
     zh: cmqim47x700tunq074za20dq1  # Chinese (China), locale zh-CN
   download_dir: artifacts/datasets/mdc
-  split: test
+  # Common Voice curates train/dev/test for speaker *diversity* (~1-2 clips per
+  # speaker), which cannot feed the multi-clip single-speaker turns the builder
+  # needs. `validated` is the full validated-clip pool with many clips/speaker.
+  split: validated
   min_clips_per_speaker: 12
 
 profiles:
