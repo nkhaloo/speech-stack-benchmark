@@ -1,0 +1,22 @@
+# GPU ASR — accuracy reference
+id: fw-large-v3
+family: whisper
+runtime: faster_whisper
+model: large-v3
+device: cuda
+compute_type: float16
+beam_size: 5
+vad_filter: true
+word_timestamps: true
+chunked_eval: true
+license: MIT              # faster-whisper + CTranslate2
+weights_license: MIT      # OpenAI Whisper weights
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+expected_vram_gb: 10
+disk_size_gb: 3.1
+deployment_notes: "Batch model; sentence-level streaming via chunked windows."
+download:
+  kind: faster_whisper
+  name: large-v3

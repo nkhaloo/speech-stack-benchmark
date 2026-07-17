@@ -1,0 +1,10 @@
+# Dummy ASR — plumbing/smoke tests only; excluded from leaderboards.
+id: dummy-asr
+family: dummy
+runtime: dummy
+wer_target: 0.12
+chunked_eval: true
+license: n/a
+weights_license: n/a
+offline_after_download: true
+languages: [en, es, fr, ar, zh]

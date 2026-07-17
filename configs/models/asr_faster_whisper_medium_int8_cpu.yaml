@@ -1,0 +1,19 @@
+# CPU ASR — faster-whisper medium int8 (desktop recommended, slower)
+id: fw-medium-int8-cpu
+family: whisper
+runtime: faster_whisper
+model: medium
+device: cpu
+compute_type: int8
+beam_size: 5
+vad_filter: true
+word_timestamps: true
+license: MIT
+weights_license: MIT
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+disk_size_gb: 1.5
+download:
+  kind: faster_whisper
+  name: medium

@@ -1,0 +1,25 @@
+# GPU ASR — Voxtral Mini via local vLLM server (EXPERIMENTAL candidate).
+# Apache-2.0 open weights, 13 languages incl. all five targets; the Realtime
+# variant (Voxtral-Mini-4B-Realtime-2602) is a TRUE streaming model — the
+# main licensing-clean alternative to Whisper. Requires its own environment
+# (.venv-voxtral) and a running local vLLM server; see docs/model_shortlist.md.
+id: voxtral-mini-vllm
+family: voxtral
+runtime: voxtral_vllm
+model: mistralai/Voxtral-Mini-3B-2507
+endpoint: http://127.0.0.1:8000/v1
+enabled: false            # enable after launching the vLLM server
+license: Apache-2.0       # vLLM
+weights_license: Apache-2.0
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+expected_vram_gb: 16
+disk_size_gb: 9
+deployment_notes: >
+  Timestamp support depends on server version; weak word timestamps degrade
+  speaker attribution. Evaluate the Realtime-2602 variant separately for true
+  streaming latency.
+download:
+  kind: hf_snapshot
+  repo: mistralai/Voxtral-Mini-3B-2507

@@ -1,0 +1,9 @@
+# Dummy diarizer — plumbing/smoke tests only; excluded from leaderboards.
+id: dummy-diar
+family: dummy
+runtime: dummy
+boundary_jitter_sec: 0.2
+confusion_rate: 0.05
+license: n/a
+weights_license: n/a
+offline_after_download: true

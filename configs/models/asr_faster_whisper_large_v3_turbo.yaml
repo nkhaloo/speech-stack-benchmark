@@ -1,0 +1,22 @@
+# GPU ASR — speed/quality tradeoff (recommended-config candidate)
+id: fw-large-v3-turbo
+family: whisper
+runtime: faster_whisper
+model: large-v3-turbo
+device: cuda
+compute_type: float16
+beam_size: 5
+vad_filter: true
+word_timestamps: true
+chunked_eval: true
+license: MIT
+weights_license: MIT
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+expected_vram_gb: 6
+disk_size_gb: 1.6
+deployment_notes: "4x faster decoder than large-v3 with small quality loss."
+download:
+  kind: faster_whisper
+  name: large-v3-turbo

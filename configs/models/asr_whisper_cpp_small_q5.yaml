@@ -1,0 +1,18 @@
+# CPU ASR — whisper.cpp quantized small (desktop minimum footprint)
+id: wcpp-small-q5
+family: whisper
+runtime: whisper_cpp
+binary: whisper-cli
+model_path: artifacts/models/whisper-cpp/ggml-small-q5_1.bin
+quantization: q5_1
+license: MIT
+weights_license: MIT
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+disk_size_gb: 0.2
+download:
+  kind: hf_file
+  repo: ggerganov/whisper.cpp
+  file: ggml-small-q5_1.bin
+  dest: artifacts/models/whisper-cpp/ggml-small-q5_1.bin

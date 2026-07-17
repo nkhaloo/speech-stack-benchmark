@@ -1,0 +1,34 @@
+# Environments
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+
+# Large assets: downloaded separately on each machine, never committed.
+artifacts/models/
+artifacts/datasets/
+artifacts/cache/
+artifacts/runs/
+artifacts/exports/
+artifacts/metrics/
+artifacts/reports/
+artifacts/latest
+artifacts/index.csv
+
+# Hugging Face / tool caches
+.hf_cache/
+.cache/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Local secrets (HF token etc.) — never commit
+.env
+.env.*

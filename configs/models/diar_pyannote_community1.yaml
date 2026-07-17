@@ -1,0 +1,21 @@
+# Diarization — pyannote/speaker-diarization-community-1 (GPU quality upgrade)
+# CC-BY-4.0 weights (attribution required), GATED download.
+# Requires pyannote.audio >= 4.0 → runs in the dedicated .venv-pyannote4
+# environment (scripts/setup_linux_gpu.sh --with-pyannote4). Disabled by
+# default so the main environment never tries to load it.
+id: pyannote-community-1
+family: pyannote
+runtime: pyannote
+model: pyannote/speaker-diarization-community-1
+device: cuda
+enabled: false
+license: MIT               # pyannote.audio library
+weights_license: CC-BY-4.0
+gated: true
+offline_after_download: true
+expected_vram_gb: 3
+disk_size_gb: 0.2
+deployment_notes: "Attribution required (CC-BY). Better overlap handling than 3.1."
+download:
+  kind: hf_snapshot
+  repo: pyannote/speaker-diarization-community-1

@@ -1,0 +1,24 @@
+# Smoke track — dummy adapters only; validates the entire pipeline
+# (datasets -> ASR -> diarization -> fusion -> metrics -> report) with zero
+# model downloads. Results are synthetic and never comparable to real runs.
+track: smoke
+languages: [en, es, fr, ar, zh]
+force_language: false
+
+asr_models:
+  - configs/models/asr_dummy.yaml
+
+diarization_models:
+  - configs/models/diar_dummy.yaml
+
+fusion:
+  sentence_gap_sec: 0.8
+
+chunked:
+  window_sec: 20.0
+  hop_sec: 5.0
+  stabilize_steps: 2
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false

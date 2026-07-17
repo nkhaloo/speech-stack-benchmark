@@ -1,0 +1,20 @@
+# Diarization — NVIDIA Sortformer 4spk-v1 (REFERENCE ONLY, disabled).
+# WEIGHTS ARE CC-BY-NC-4.0 (NON-COMMERCIAL) — verified 2026-07-17 on the HF
+# model card. Must never be part of the recommended commercial stack; may be
+# enabled purely to see how far the open candidates are from it.
+id: nemo-sortformer-4spk
+family: nemo
+runtime: nemo_sortformer
+model: nvidia/diar_sortformer_4spk-v1
+enabled: false
+acknowledge_non_commercial: false   # set true to run for reference comparison
+license: Apache-2.0                 # NeMo library
+weights_license: CC-BY-NC-4.0       # NON-COMMERCIAL
+gated: false
+offline_after_download: true
+expected_vram_gb: 6
+disk_size_gb: 0.7
+deployment_notes: "Max 4 speakers; dedicated .venv-nemo environment required."
+download:
+  kind: hf_snapshot
+  repo: nvidia/diar_sortformer_4spk-v1

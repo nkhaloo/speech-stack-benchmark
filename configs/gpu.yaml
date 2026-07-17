@@ -1,0 +1,28 @@
+# GPU track — Linux lab machine with NVIDIA GPUs (primary benchmark).
+track: gpu
+gpu_index: 0
+languages: [en, es, fr, ar, zh]
+force_language: false        # auto-detect, so detection accuracy is measured
+
+asr_models:
+  - configs/models/asr_faster_whisper_large_v3.yaml
+  - configs/models/asr_faster_whisper_large_v3_turbo.yaml
+  - configs/models/asr_faster_whisper_medium.yaml
+  - configs/models/asr_voxtral_mini_vllm.yaml      # enabled: false by default
+
+diarization_models:
+  - configs/models/diar_pyannote_31.yaml
+  - configs/models/diar_pyannote_community1.yaml   # enabled: false (needs pyannote.audio 4)
+  - configs/models/diar_nemo_sortformer.yaml       # enabled: false (CC-BY-NC)
+
+fusion:
+  sentence_gap_sec: 0.8
+
+chunked:                     # streaming-simulation settings (see methodology)
+  window_sec: 20.0
+  hop_sec: 5.0
+  stabilize_steps: 2
+
+metrics:
+  der_collar: 0.5            # total collar (±0.25 s), recorded in every run
+  der_skip_overlap: false

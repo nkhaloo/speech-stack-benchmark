@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "speech-benchmark"
+version = "0.1.0"
+description = "Reproducible benchmark for private, self-hosted ASR + speaker-diarization stacks (CPU and NVIDIA GPU)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "soundfile>=0.12",
+    "jiwer>=3.0",
+    "pyannote.core>=5.0",
+    "pyannote.metrics>=3.2",
+    "psutil>=5.9",
+    "tqdm>=4.65",
+    "tabulate>=0.9",
+    "huggingface_hub>=0.23",
+]
+
+[project.optional-dependencies]
+# Development / reporting on the MacBook. Lightweight: no torch, no model runtimes.
+dev = [
+    "pytest>=7.4",
+    "matplotlib>=3.7",
+]
+# CPU-track model runtimes (desktop-class: macOS / Windows / CPU-only Linux).
+cpu = [
+    "faster-whisper>=1.1",
+    "sherpa-onnx>=1.10",
+]
+# CPU diarization with pyannote (slow but works; pulls torch CPU build on mac/win).
+cpu-pyannote = [
+    "pyannote.audio>=3.3,<4",
+    "torch>=2.2",
+    "torchaudio>=2.2",
+]
+# GPU track (Linux + NVIDIA). Default pip torch wheels ship CUDA on Linux.
+gpu = [
+    "faster-whisper>=1.1",
+    "pyannote.audio>=3.3,<4",
+    "torch>=2.2",
+    "torchaudio>=2.2",
+    "nvidia-ml-py>=12.0",
+    "matplotlib>=3.7",
+    "requests>=2.31",
+]
+# Dataset preparation (Common Voice download via Hugging Face).
+data = [
+    "datasets>=2.20",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/speech_benchmark"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+# Notes:
+# - pyannote speaker-diarization-community-1 requires pyannote.audio>=4.0, which has
+#   heavier decoding deps (torchcodec/ffmpeg). It gets its own environment; see
+#   scripts/setup_linux_gpu.sh --with-pyannote4 and docs/model_shortlist.md.
+# - NVIDIA NeMo (Sortformer) is CC-BY-NC and dependency-heavy; it is optional,
+#   disabled by default, and would use its own environment. See docs/licensing.md.
+# - Voxtral Mini Realtime runs behind a local vLLM server in its own environment;
+#   the adapter here is a thin localhost client. See configs/models/voxtral_mini_realtime.yaml.

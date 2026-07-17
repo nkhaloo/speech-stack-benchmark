@@ -1,0 +1,27 @@
+# Synthetic-conversation dataset profiles.
+# Deterministic: same seed + same source version => same recordings; the
+# exact clip selection is saved to selection.json at preparation time.
+seed: 20260717
+languages: [en, es, fr, ar, zh]
+
+# Source for real speech: Mozilla Common Voice (CC0). Requires the [data]
+# extra, a Hugging Face account, and one-time acceptance of the CV terms.
+source: commonvoice
+source_kwargs:
+  dataset_name: mozilla-foundation/common_voice_17_0
+  split: test
+  min_clips_per_speaker: 12
+
+profiles:
+  smoke:            # ~6 min/language — adapter and metric debugging
+    minutes_per_language: 6
+    recording_minutes: 3
+    speakers_range: [2, 3]
+  baseline:         # ~45 min/language — the main comparison
+    minutes_per_language: 45
+    recording_minutes: 5
+    speakers_range: [2, 4]
+  extended:         # optional larger evaluation
+    minutes_per_language: 120
+    recording_minutes: 6
+    speakers_range: [2, 5]

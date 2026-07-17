@@ -1,0 +1,21 @@
+# Diarization — sherpa-onnx offline pipeline (CPU track primary)
+# pyannote segmentation-3.0 (ONNX export, MIT) + 3D-Speaker ERes2NetV2
+# embeddings (Apache-2.0) clustered by the Apache-2.0 sherpa-onnx runtime.
+# No torch; runs on macOS / Windows / Linux CPUs.
+id: sherpa-diar-cpu
+family: sherpa_onnx
+runtime: sherpa_onnx
+segmentation_model: artifacts/models/sherpa-onnx/sherpa-onnx-pyannote-segmentation-3-0/model.onnx
+embedding_model: artifacts/models/sherpa-onnx/3dspeaker_speech_eres2netv2_sv_zh-cn_16k-common.onnx
+cluster_threshold: 0.5
+num_threads: 4
+license: Apache-2.0
+weights_license: "MIT (segmentation) + Apache-2.0 (embedding)"
+gated: false
+offline_after_download: true
+disk_size_gb: 0.1
+download:
+  kind: sherpa_bundle
+  segmentation_url: https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
+  embedding_url: https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/3dspeaker_speech_eres2netv2_sv_zh-cn_16k-common.onnx
+  dest: artifacts/models/sherpa-onnx

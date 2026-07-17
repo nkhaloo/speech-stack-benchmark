@@ -1,0 +1,21 @@
+# CPU ASR — whisper.cpp quantized large-v3-turbo (desktop highest quality)
+# Requires the whisper-cli binary: `brew install whisper-cpp` (mac) or build
+# from source (github.com/ggerganov/whisper.cpp, MIT).
+id: wcpp-large-v3-turbo-q5
+family: whisper
+runtime: whisper_cpp
+binary: whisper-cli
+model_path: artifacts/models/whisper-cpp/ggml-large-v3-turbo-q5_0.bin
+quantization: q5_0
+license: MIT
+weights_license: MIT
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+disk_size_gb: 0.6
+deployment_notes: "Metal acceleration on Apple Silicon; good Windows story."
+download:
+  kind: hf_file
+  repo: ggerganov/whisper.cpp
+  file: ggml-large-v3-turbo-q5_0.bin
+  dest: artifacts/models/whisper-cpp/ggml-large-v3-turbo-q5_0.bin

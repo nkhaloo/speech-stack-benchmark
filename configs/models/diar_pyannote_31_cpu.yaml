@@ -1,0 +1,16 @@
+# Diarization — pyannote 3.1 forced to CPU (desktop quality option; slow).
+# Same gated MIT weights as diar_pyannote_31.yaml.
+id: pyannote-3.1-cpu
+family: pyannote
+runtime: pyannote
+model: pyannote/speaker-diarization-3.1
+device: cpu
+license: MIT
+weights_license: MIT
+gated: true
+offline_after_download: true
+disk_size_gb: 0.1
+deployment_notes: "Needs torch CPU (~2 GB install); RTF well above sherpa-onnx."
+download:
+  kind: hf_snapshot
+  repo: pyannote/speaker-diarization-3.1

@@ -1,0 +1,20 @@
+# GPU ASR — minimum-viable GPU configuration candidate
+id: fw-medium
+family: whisper
+runtime: faster_whisper
+model: medium
+device: cuda
+compute_type: float16
+beam_size: 5
+vad_filter: true
+word_timestamps: true
+license: MIT
+weights_license: MIT
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+expected_vram_gb: 4
+disk_size_gb: 1.5
+download:
+  kind: faster_whisper
+  name: medium

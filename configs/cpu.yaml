@@ -1,0 +1,28 @@
+# CPU track — desktop-class hardware (macOS / Windows / CPU-only Linux).
+# Runnable on the MacBook for real, but remember: MacBook numbers do NOT
+# predict Linux GPU numbers, and CPU results are reported separately.
+track: cpu
+languages: [en, es, fr, ar, zh]
+force_language: false
+
+asr_models:
+  - configs/models/asr_faster_whisper_small_int8_cpu.yaml
+  - configs/models/asr_faster_whisper_medium_int8_cpu.yaml
+  - configs/models/asr_whisper_cpp_small_q5.yaml
+  - configs/models/asr_whisper_cpp_large_v3_turbo_q5.yaml
+
+diarization_models:
+  - configs/models/diar_sherpa_onnx.yaml
+  - configs/models/diar_pyannote_31_cpu.yaml
+
+fusion:
+  sentence_gap_sec: 0.8
+
+chunked:
+  window_sec: 20.0
+  hop_sec: 5.0
+  stabilize_steps: 2
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false

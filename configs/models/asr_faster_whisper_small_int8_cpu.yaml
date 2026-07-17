@@ -1,0 +1,20 @@
+# CPU ASR — faster-whisper int8 (desktop minimum)
+id: fw-small-int8-cpu
+family: whisper
+runtime: faster_whisper
+model: small
+device: cpu
+compute_type: int8
+beam_size: 5
+vad_filter: true
+word_timestamps: true
+chunked_eval: true
+license: MIT
+weights_license: MIT
+gated: false
+offline_after_download: true
+languages: [en, es, fr, ar, zh]
+disk_size_gb: 0.5
+download:
+  kind: faster_whisper
+  name: small
