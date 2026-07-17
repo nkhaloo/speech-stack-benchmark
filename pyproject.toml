@@ -40,20 +40,24 @@ cpu = [
     "sherpa-onnx>=1.10",
 ]
 # CPU diarization with pyannote (slow but works; pulls torch CPU build on mac/win).
+# Same torch/torchaudio caps as the gpu extra (see that comment for why).
 cpu-pyannote = [
     "pyannote.audio>=3.3,<4",
-    "torch>=2.2,<2.7",
-    "torchaudio>=2.2,<2.7",
+    "torch>=2.2,<2.6",
+    "torchaudio>=2.2,<2.6",
 ]
 # GPU track (Linux + NVIDIA). Default pip torch wheels ship CUDA on Linux.
-# torch/torchaudio are capped: pyannote.audio 3.x + speechbrain import
-# torchaudio.AudioMetaData, which torchaudio >=2.9 removed. Do not remove the
-# upper bound without also moving pyannote to a version that no longer needs it.
+# torch/torchaudio are capped for two pyannote.audio 3.x compat reasons:
+#   - torchaudio >=2.9 removed torchaudio.AudioMetaData (imported by pyannote +
+#     speechbrain).
+#   - torch >=2.6 flipped torch.load's weights_only default to True, which
+#     rejects pyannote's Lightning checkpoints (UnpicklingError on TorchVersion).
+# Do not raise these bounds without moving pyannote to a version that handles both.
 gpu = [
     "faster-whisper>=1.1",
     "pyannote.audio>=3.3,<4",
-    "torch>=2.2,<2.7",
-    "torchaudio>=2.2,<2.7",
+    "torch>=2.2,<2.6",
+    "torchaudio>=2.2,<2.6",
     "nvidia-ml-py>=12.0",
     "matplotlib>=3.7",
     "requests>=2.31",
