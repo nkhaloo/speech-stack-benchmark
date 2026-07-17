@@ -17,9 +17,11 @@ uses a two-part design:
 
 `scripts/prepare_datasets.py` builds multi-speaker "conversations" by
 concatenating single-speaker, human-read utterances from **Mozilla Common
-Voice** (CC0; per-clip speaker `client_id`; validated transcripts; all five
-languages, `zh` = `zh-CN`), with randomized speaker order and 0.4–1.2 s
-silence gaps, no overlap.
+Voice Scripted Speech 26.0** (CC0; per-clip speaker `client_id`; validated
+transcripts; all five languages, `zh` = `zh-CN`), with randomized speaker
+order and 0.4–1.2 s silence gaps, no overlap. Mozilla Data Collective hosts
+the archives; the retired Hugging Face Common Voice repositories are no
+longer used.
 
 Why this is the right baseline:
 
@@ -78,10 +80,13 @@ and `run_smoke_test.sh`).
 
 ## Access notes
 
-* Common Voice via Hugging Face (`mozilla-foundation/common_voice_17_0`)
-  requires a free account and one-time terms acceptance (the data itself is
-  CC0). Alternatively download archives directly from Mozilla and point the
-  source at them.
+* Common Voice requires a Mozilla Data Collective account, one-time acceptance
+  of each locale's conditions, and `MDC_API_KEY` from Profile → API. Dataset
+  ids are pinned in `configs/datasets/synthetic.yaml`: English (`en`), Spanish
+  (`es`), French (`fr`), Arabic (`ar`), and Chinese (China, `zh-CN`).
+* The archives are large because MDC provides complete per-locale releases.
+  Downloads are resumable and cached in `artifacts/datasets/mdc/`; make sure
+  the lab machine has sufficient disk space before preparing the baseline.
 * Preparation is fully independent of the benchmark run:
   `python scripts/prepare_datasets.py --profile baseline` on the lab machine.
 * Outputs land in `artifacts/datasets/<dataset>/<profile>/`: per-language

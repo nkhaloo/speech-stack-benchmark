@@ -72,7 +72,8 @@ git clone <repository-url>
 cd speech-stack-benchmark
 ./scripts/setup_linux_gpu.sh                 # verifies driver/GPUs, creates .venv, GPU validation
 source .venv/bin/activate
-export HF_TOKEN=...                          # gated pyannote download (one-time terms acceptance on hf.co)
+export HF_TOKEN=...                          # gated pyannote models
+export MDC_API_KEY=...                       # Common Voice downloads
 
 python scripts/prepare_datasets.py --profile baseline
 python scripts/download_models.py --track gpu
@@ -85,6 +86,12 @@ Optional extra environments (kept separate on purpose):
 (pyannote community-1 / Voxtral-vLLM / NeMo Sortformer — the last is
 CC-BY-NC, reference only). Run the same `--run-id` from each env; cached
 completed models are skipped automatically.
+
+Dataset preparation uses Common Voice Scripted Speech 26.0 from Mozilla Data
+Collective. Before running it, accept the conditions on each of the five locale
+pages listed in `docs/datasets.md` and create an API key under MDC Profile → API.
+The official client resumes interrupted archive downloads; archives and
+extracted files remain under `artifacts/datasets/mdc/` and are gitignored.
 
 ### 1. Where results live
 

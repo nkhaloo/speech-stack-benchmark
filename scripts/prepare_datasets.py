@@ -25,7 +25,7 @@ def main() -> None:
     ap.add_argument("--profile", default="smoke",
                     choices=["smoke", "baseline", "extended"])
     ap.add_argument("--source", default=None,
-                    help="clip source: commonvoice (default from config) or dummy")
+                    help="clip source: commonvoice_mdc (default), commonvoice, or dummy")
     ap.add_argument("--languages", nargs="*", default=None)
     ap.add_argument("--config", default=str(ROOT / "configs/datasets/synthetic.yaml"))
     ap.add_argument("--out", default=None, help="output dir override")
@@ -33,7 +33,7 @@ def main() -> None:
 
     cfg = load_yaml(args.config)
     profile_cfg = cfg["profiles"][args.profile]
-    source = args.source or cfg.get("source", "commonvoice")
+    source = args.source or cfg.get("source", "commonvoice_mdc")
     languages = args.languages or cfg.get("languages", ["en", "es", "fr", "ar", "zh"])
     source_kwargs = cfg.get("source_kwargs", {}) if source == cfg.get("source") else {}
 

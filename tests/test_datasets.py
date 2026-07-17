@@ -1,6 +1,10 @@
+import csv
 from pathlib import Path
 
-from speech_benchmark.audio import duration_sec
+import numpy as np
+
+from speech_benchmark.audio import duration_sec, write_wav
+from speech_benchmark.datasets.sources import CommonVoiceMDCSource
 from speech_benchmark.datasets.synthetic import prepare_synthetic_dataset
 from speech_benchmark.schemas import load_json, load_manifest
 
@@ -35,3 +39,33 @@ def test_deterministic_generation(tmp_path):
     ref2 = load_json(r2[0].reference_path)
     assert ref1["turns"] == ref2["turns"]
     assert r1[0].duration_sec == r2[0].duration_sec
+
+
+def test_commonvoice_mdc_reads_extracted_archive(tmp_path):
+    dataset_id = "test-en-dataset"
+    dataset_root = tmp_path / dataset_id / "cv-corpus-test-en"
+    clips_dir = dataset_root / "clips"
+    clips_dir.mkdir(parents=True)
+    rows = []
+    for speaker in ("alice", "bob"):
+        for i in range(3):
+            name = f"{speaker}-{i}.wav"
+            write_wav(clips_dir / name, np.zeros(4000, dtype=np.float32))
+            rows.append({"client_id": speaker, "path": name,
+                         "sentence": f"sample {speaker} {i}"})
+    with (dataset_root / "test.tsv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["client_id", "path", "sentence"],
+                                delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
+    (tmp_path / dataset_id / ".complete").touch()
+
+    source = CommonVoiceMDCSource(
+        dataset_ids={"en": dataset_id}, download_dir=str(tmp_path),
+        min_clips_per_speaker=3,
+    )
+    speakers = source.speakers("en", num_speakers=2, seed=7)
+    assert sorted(speakers) == ["en_spk00", "en_spk01"]
+    assert all(len(clips) == 3 for clips in speakers.values())
+    assert all(clip.audio().dtype == np.float32
+               for clips in speakers.values() for clip in clips)

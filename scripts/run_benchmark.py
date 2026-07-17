@@ -27,7 +27,7 @@ ROOT = project_root()
 
 def default_manifest(profile: str) -> Path:
     ds_cfg = load_yaml(ROOT / "configs/datasets/synthetic.yaml")
-    source = ds_cfg.get("source", "commonvoice")
+    source = ds_cfg.get("source", "commonvoice_mdc")
     return ROOT / "artifacts" / "datasets" / f"synthetic_{source}" / profile / "manifest.jsonl"
 
 

@@ -7,20 +7,26 @@ clips from several speakers into a conversation with exact reference turns.
 Sources:
   * DummySource       — locally generated "speech-like" tones + codeword
                         transcripts; zero downloads; for plumbing/smoke tests.
-  * CommonVoiceSource — Mozilla Common Voice (CC0), real speech in all five
-                        target languages with per-clip speaker ids (client_id).
-                        Requires `datasets` ([data] extra), a Hugging Face
-                        account, and one-time acceptance of the CV terms.
+  * CommonVoiceMDCSource — Mozilla Common Voice (CC0), real speech in all five
+                           target languages with per-clip speaker ids. Uses
+                           Mozilla Data Collective's official download client.
+  * CommonVoiceSource    — legacy Hugging Face loader retained for old local
+                           caches; Mozilla retired those hosted datasets.
 """
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import random
+import tarfile
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from pathlib import Path
+from typing import Callable
 
 import numpy as np
+
+from ..audio import load_audio
 
 SR = 16000
 
@@ -165,9 +171,156 @@ class CommonVoiceSource:
         return out
 
 
+class CommonVoiceMDCSource:
+    """Common Voice archives hosted by Mozilla Data Collective (MDC).
+
+    MDC distributes one archive per locale.  Archives are downloaded with the
+    official ``datacollective`` SDK, cached, and extracted once.  The source
+    then reads Common Voice's TSV metadata directly instead of loading the
+    retired Hugging Face dataset repositories.
+    """
+
+    name = "commonvoice_mdc"
+
+    def __init__(
+        self,
+        dataset_ids: dict[str, str],
+        download_dir: str = "artifacts/datasets/mdc",
+        split: str = "test",
+        min_clips_per_speaker: int = 12,
+    ):
+        self.dataset_ids = dataset_ids
+        self.download_dir = Path(download_dir)
+        self.split = split
+        self.min_clips = min_clips_per_speaker
+
+    def _dataset_root(self, language: str) -> Path:
+        cv_lang = CV_LANG.get(language, language)
+        dataset_id = self.dataset_ids.get(language) or self.dataset_ids.get(cv_lang)
+        if not dataset_id:
+            raise RuntimeError(f"No MDC dataset id configured for language {language!r}")
+
+        extract_dir = self.download_dir / dataset_id
+        if (extract_dir / ".complete").exists() and \
+                _find_cv_tsv(extract_dir, self.split) is not None:
+            return extract_dir
+
+        try:
+            from datacollective import download_dataset
+        except ImportError as e:
+            raise RuntimeError(
+                "The `datacollective` package is required for Mozilla Data "
+                "Collective downloads. Install with: pip install -e '.[data]'"
+            ) from e
+
+        self.download_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Downloading Common Voice {cv_lang} from MDC ({dataset_id})")
+        try:
+            archive = Path(download_dataset(
+                dataset_id, download_directory=str(self.download_dir)
+            ))
+        except PermissionError as e:
+            raise RuntimeError(
+                f"MDC denied access to {dataset_id}. Set MDC_API_KEY and accept "
+                "this dataset's conditions on mozilladatacollective.com."
+            ) from e
+
+        print(f"Extracting {archive.name} -> {extract_dir}")
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            with tarfile.open(archive, "r:*") as tf:
+                tf.extractall(extract_dir, filter="data")
+        except Exception:
+            # An incomplete extraction must not look reusable on the next run.
+            marker = extract_dir / ".complete"
+            marker.unlink(missing_ok=True)
+            raise
+        (extract_dir / ".complete").touch()
+        return extract_dir
+
+    def speakers(self, language: str, num_speakers: int, seed: int) -> dict[str, list[Clip]]:
+        cv_lang = CV_LANG.get(language, language)
+        root = self._dataset_root(language)
+        tsv_path = _find_cv_tsv(root, self.split)
+        if tsv_path is None:
+            raise RuntimeError(
+                f"MDC archive for {cv_lang} contains neither {self.split}.tsv "
+                f"nor validated.tsv under {root}"
+            )
+
+        by_speaker: dict[str, list[dict[str, str]]] = {}
+        with tsv_path.open(encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f, delimiter="\t"):
+                cid = (row.get("client_id") or "").strip()
+                text = (row.get("sentence") or row.get("text") or "").strip()
+                relpath = (row.get("path") or "").strip()
+                if not cid or not text or not relpath:
+                    continue
+                audio_path = _find_cv_audio(tsv_path.parent, root, relpath)
+                if audio_path is not None:
+                    row["_audio_path"] = str(audio_path)
+                    row["_text"] = text
+                    by_speaker.setdefault(cid, []).append(row)
+
+        eligible = [cid for cid, rows in by_speaker.items()
+                    if len(rows) >= self.min_clips]
+        eligible.sort(key=lambda cid: hashlib.sha256(
+            f"{seed}:{cid}".encode()).hexdigest())
+        chosen = eligible[:num_speakers]
+        if len(chosen) < num_speakers:
+            raise RuntimeError(
+                f"Common Voice MDC {cv_lang}/{tsv_path.name}: only "
+                f"{len(chosen)} speakers with >= {self.min_clips} clips "
+                f"(need {num_speakers})"
+            )
+
+        out: dict[str, list[Clip]] = {}
+        for s_idx, cid in enumerate(chosen):
+            spk = f"{language}_spk{s_idx:02d}"
+            clips: list[Clip] = []
+            for row in by_speaker[cid][:60]:
+                audio_path = Path(row["_audio_path"])
+
+                def _loader(audio_path: Path = audio_path) -> np.ndarray:
+                    audio, _ = load_audio(audio_path, SR)
+                    return audio
+
+                clips.append(Clip(
+                    clip_id=f"mdc:{cv_lang}:{row['path']}",
+                    speaker_id=spk,
+                    text=row["_text"],
+                    _loader=_loader,
+                ))
+            out[spk] = clips
+        return out
+
+
+def _find_cv_tsv(root: Path, split: str) -> Path | None:
+    """Find the requested Common Voice split, falling back to validated."""
+    if not root.exists():
+        return None
+    for name in dict.fromkeys((f"{split}.tsv", "validated.tsv")):
+        matches = sorted(root.rglob(name))
+        if matches:
+            return matches[0]
+    return None
+
+
+def _find_cv_audio(tsv_dir: Path, root: Path, relpath: str) -> Path | None:
+    candidates = (tsv_dir / "clips" / relpath, tsv_dir / relpath,
+                  root / "clips" / relpath, root / relpath)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    matches = list(root.rglob(relpath))
+    return matches[0] if matches else None
+
+
 def get_source(name: str, **kwargs):
     if name == "dummy":
         return DummySource(**kwargs)
     if name == "commonvoice":
         return CommonVoiceSource(**kwargs)
+    if name == "commonvoice_mdc":
+        return CommonVoiceMDCSource(**kwargs)
     raise KeyError(f"unknown dataset source {name!r}")

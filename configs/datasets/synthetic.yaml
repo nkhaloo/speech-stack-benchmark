@@ -4,11 +4,18 @@
 seed: 20260717
 languages: [en, es, fr, ar, zh]
 
-# Source for real speech: Mozilla Common Voice (CC0). Requires the [data]
-# extra, a Hugging Face account, and one-time acceptance of the CV terms.
-source: commonvoice
+# Source for real speech: Mozilla Common Voice Scripted Speech 26.0 (CC0),
+# hosted by Mozilla Data Collective. Requires the [data] extra, MDC_API_KEY,
+# and one-time acceptance of each locale's conditions on the MDC website.
+source: commonvoice_mdc
 source_kwargs:
-  dataset_name: mozilla-foundation/common_voice_17_0
+  dataset_ids:
+    en: cmqim2hn800ssnr07gvmpcnwu
+    es: cmqim2spa00synr071fcp7av0
+    fr: cmqim41b000tanr07q9btypkc
+    ar: cmqinoh7z00wsnr07v5ixz5uo
+    zh: cmqim47x700tunq074za20dq1  # Chinese (China), locale zh-CN
+  download_dir: artifacts/datasets/mdc
   split: test
   min_clips_per_speaker: 12
 
