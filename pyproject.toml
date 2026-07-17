@@ -21,7 +21,11 @@ dependencies = [
     "psutil>=5.9",
     "tqdm>=4.65",
     "tabulate>=0.9",
-    "huggingface_hub>=0.23",
+    # Capped: huggingface_hub >=0.26 removed the `use_auth_token` argument that
+    # pyannote.audio 3.x still passes to hf_hub_download (Pipeline.from_pretrained
+    # raises TypeError otherwise). Do not remove the upper bound without moving
+    # pyannote to a version that uses the newer `token` argument.
+    "huggingface_hub>=0.23,<0.26",
 ]
 
 [project.optional-dependencies]
