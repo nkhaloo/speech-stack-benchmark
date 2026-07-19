@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..audio import write_wav
+from ..audio import trim_silence, write_wav
 from ..schemas import (Recording, Reference, ReferenceTurn, atomic_write_json,
                        save_manifest)
 from .sources import SR, get_source
@@ -54,7 +54,9 @@ def build_conversation(
             candidates = [s for s in candidates if s != prev_speaker]
         spk = rng.choice(candidates)
         clip = pools[spk].pop()
-        clip_audio = clip.audio()
+        # Trim source-clip edge silence so the reference turn hugs actual speech
+        # (untrimmed padding was counted as reference speech -> inflated DER).
+        clip_audio = trim_silence(clip.audio())
         dur = len(clip_audio) / SR
         if dur < 0.2:
             continue
