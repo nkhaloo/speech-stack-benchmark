@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..audio import trim_silence, write_wav
+from ..audio import voiced_segments, write_wav
 from ..schemas import (Recording, Reference, ReferenceTurn, atomic_write_json,
                        save_manifest)
 from .sources import SR, get_source
@@ -54,15 +54,30 @@ def build_conversation(
             candidates = [s for s in candidates if s != prev_speaker]
         spk = rng.choice(candidates)
         clip = pools[spk].pop()
-        # Trim source-clip edge silence so the reference turn hugs actual speech
-        # (untrimmed padding was counted as reference speech -> inflated DER).
-        clip_audio = trim_silence(clip.audio())
+        # Reference turns follow speech activity: drop edge silence and split on
+        # silence *inside* the clip, so pauses are not labeled as speech (which
+        # the diarizer would otherwise be charged with as "missed speech").
+        raw = clip.audio()
+        segs = voiced_segments(raw, SR)
+        if not segs:
+            continue
+        a = int(round(segs[0][0] * SR))
+        b = int(round(segs[-1][1] * SR))
+        clip_audio = raw[a:b]  # trims leading/trailing silence; keeps inner pauses
         dur = len(clip_audio) / SR
         if dur < 0.2:
             continue
+        clip_start = t
+        offset = a / SR
         audio_parts.append(clip_audio)
-        turns.append(ReferenceTurn(speaker=spk, start=round(t, 3),
-                                   end=round(t + dur, 3), text=clip.text))
+        # One reference turn per voiced span; the clip's text goes on the first.
+        for i, (s, e) in enumerate(segs):
+            turns.append(ReferenceTurn(
+                speaker=spk,
+                start=round(clip_start + s - offset, 3),
+                end=round(clip_start + e - offset, 3),
+                text=clip.text if i == 0 else "",
+            ))
         gap = rng.uniform(*gap_range)
         audio_parts.append(np.zeros(int(gap * SR), dtype=np.float32))
         t += dur + gap

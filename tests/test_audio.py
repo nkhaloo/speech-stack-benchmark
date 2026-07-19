@@ -1,6 +1,6 @@
 import numpy as np
 
-from speech_benchmark.audio import TARGET_SR, trim_silence
+from speech_benchmark.audio import TARGET_SR, trim_silence, voiced_segments
 
 
 def _tone(dur_sec: float, sr: int = TARGET_SR, freq: float = 220.0,
@@ -45,3 +45,31 @@ def test_trim_silence_is_deterministic():
     padded = np.concatenate([np.zeros(3000, dtype=np.float32), _tone(0.7),
                              np.zeros(3000, dtype=np.float32)])
     assert np.array_equal(trim_silence(padded), trim_silence(padded))
+
+
+def test_voiced_segments_splits_on_internal_pause():
+    # 0.6s speech | 0.6s silence | 0.6s speech -> two voiced spans.
+    clip = np.concatenate([_tone(0.6), np.zeros(int(0.6 * TARGET_SR), np.float32),
+                           _tone(0.6)])
+    segs = voiced_segments(clip)
+    assert len(segs) == 2
+    # First span ends before the gap; second starts after it; edges are trimmed.
+    assert segs[0][0] < 0.2 and 0.5 < segs[0][1] < 0.9
+    assert 1.0 < segs[1][0] < 1.4 and segs[1][1] > 1.5
+
+
+def test_voiced_segments_merges_brief_gap():
+    # 0.1s gap is shorter than ~2*pad, so the two tones stay one span.
+    clip = np.concatenate([_tone(0.4), np.zeros(int(0.1 * TARGET_SR), np.float32),
+                           _tone(0.4)])
+    assert len(voiced_segments(clip)) == 1
+
+
+def test_voiced_segments_single_span_for_continuous_speech():
+    assert len(voiced_segments(_tone(1.0))) == 1
+
+
+def test_voiced_segments_handles_silence_and_short_input():
+    assert voiced_segments(np.zeros(int(0.4 * TARGET_SR), np.float32)) == []
+    tiny = voiced_segments(np.ones(10, dtype=np.float32))
+    assert len(tiny) == 1
