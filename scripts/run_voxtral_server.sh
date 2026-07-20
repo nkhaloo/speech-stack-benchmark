@@ -1,26 +1,25 @@
 #!/usr/bin/env bash
-# Launch the local vLLM server hosting Voxtral Mini Realtime for the streaming
-# ASR arm of the `voxtral-realtime` stack. Runs in .venv-voxtral (created by
-# scripts/setup_linux_gpu.sh --with-voxtral). Needs a GPU with >= ~16 GB VRAM.
+# Launch the local vLLM server hosting Voxtral Mini Realtime for the STREAMING
+# ASR arm of the `voxtral-realtime` stack. Exposes vLLM's WebSocket Realtime API
+# at ws://127.0.0.1:8000/v1/realtime (OpenAI-Realtime-compatible). Needs a GPU
+# with >= ~16 GB VRAM. Voxtral is Apache-2.0 & ungated (no HF token needed).
 #
-# The benchmark's voxtral_realtime adapter is an HTTP client to this server; run
-# the benchmark from .venv-diart (which has diart + the project), pointing at
-# http://127.0.0.1:8000/v1. Keep this server running in a separate terminal.
+# Set up .venv-voxtral first (see scripts/setup_voxtral.sh). Keep this running in
+# a separate terminal; run the benchmark from .venv-diart (the client).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-MODEL="${VOXTRAL_MODEL:-mistralai/Voxtral-Mini-4B-Realtime-2602}"   # Apache-2.0, ungated
+MODEL="${VOXTRAL_MODEL:-mistralai/Voxtral-Mini-4B-Realtime-2602}"
 PORT="${VOXTRAL_PORT:-8000}"
 
 if [[ ! -x .venv-voxtral/bin/vllm ]]; then
-  echo "No .venv-voxtral found. Create it first:" >&2
-  echo "  ./scripts/setup_linux_gpu.sh --with-voxtral" >&2
+  echo "No .venv-voxtral found. Create it first:  ./scripts/setup_voxtral.sh" >&2
   exit 1
 fi
 
-echo "Serving $MODEL on port $PORT (Ctrl-C to stop)…"
-exec .venv-voxtral/bin/vllm serve "$MODEL" \
+echo "Serving $MODEL (Realtime API) on port $PORT (Ctrl-C to stop)…"
+echo "Watch the startup log for:  Route: /v1/realtime"
+exec env VLLM_DISABLE_COMPILE_CACHE=1 .venv-voxtral/bin/vllm serve "$MODEL" \
   --tokenizer-mode mistral \
-  --config-format mistral \
-  --load-format mistral \
+  --compilation_config '{"cudagraph_mode":"PIECEWISE"}' \
   --port "$PORT"

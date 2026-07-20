@@ -36,10 +36,31 @@ def _synth_words(text: str, start: Optional[float], end: Optional[float],
             for i, t in enumerate(toks)]
 
 
-def reconstruct(sr: StreamingResult) -> tuple[CombinedResult, list[SpeakerTurn], str]:
+def _dedup_finals(finals: list[Emission], language: str) -> list[Emission]:
+    """Drop adjacent near-duplicate sentences. Windowed ASR re-transcribes
+    overlapping audio, so a short sentence can be emitted twice under different
+    ids when its start jitters past the tracker's match tolerance ("Do you hear
+    me? Do you hear me?"). We remove a sentence whose normalized text equals the
+    previous kept one when they overlap or sit within 1 s — genuine repeats have
+    a real time gap and survive."""
+    from ..metrics.text_norm import normalize_text
+
+    kept: list[Emission] = []
+    for e in finals:
+        if kept:
+            prev = kept[-1]
+            same = normalize_text(e.text, language) == normalize_text(prev.text, language)
+            gap = (e.start or 0.0) - (prev.end if prev.end is not None else 0.0)
+            if same and gap < 1.0:
+                continue
+        kept.append(e)
+    return kept
+
+
+def reconstruct(sr: StreamingResult, language: str = "en") -> tuple[CombinedResult, list[SpeakerTurn], str]:
     """Build the finalized (CombinedResult, hyp speaker turns, transcript text)
     from the last-known state of each sentence."""
-    finals = sr.final_emissions()
+    finals = _dedup_finals(sr.final_emissions(), language)
     sentences, turns, texts = [], [], []
     for e in finals:
         words = _synth_words(e.text, e.start, e.end, e.speaker)
@@ -108,7 +129,7 @@ def streaming_metrics(sr: StreamingResult, reference: Optional[Reference],
 
     if reference is None:
         return out
-    combined, hyp_turns, hyp_text = reconstruct(sr)
+    combined, hyp_turns, hyp_text = reconstruct(sr, language)
     # A. final accuracy — reuse the batch metric stack
     out.update(asr_metrics(reference.text, hyp_text, language))
     try:

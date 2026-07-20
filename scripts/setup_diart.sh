@@ -21,11 +21,14 @@ PY="${PYTHON:-python3}"
 # Project (for speech_benchmark) + ASR arms.
 #   faster-whisper -> diart_whisper stack; requests -> voxtral_realtime HTTP client.
 .venv-diart/bin/pip install -e ".[dev]"
-.venv-diart/bin/pip install faster-whisper requests
+#   faster-whisper -> diart_whisper stack; requests + websocket-client -> voxtral client.
+.venv-diart/bin/pip install faster-whisper requests websocket-client
 
 # diart + a torch stack compatible with pyannote.audio 3.x (verified importable).
 .venv-diart/bin/pip install diart
 .venv-diart/bin/pip install "torch==2.2.2" "torchaudio==2.2.2" "torchvision==0.17.2"
+# diart uses matplotlib.cm.get_cmap, removed in matplotlib 3.9.
+.venv-diart/bin/pip install "matplotlib<3.9"
 
 echo
 .venv-diart/bin/python - <<'PY'
