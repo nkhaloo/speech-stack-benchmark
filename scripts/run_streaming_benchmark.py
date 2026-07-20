@@ -3,8 +3,8 @@
 dataset manifest (reuses the same datasets as the batch benchmark).
 
 Resumable: re-running with the same --run-id skips completed emission logs. This
-also enables the multi-env pattern — native stacks (diart, Voxtral Realtime) run
-from their own venv against the same --run-id.
+also enables the multi-env pattern — native stacks (e.g. diart) run from their
+own venv against the same --run-id.
 
 Examples:
   python scripts/run_streaming_benchmark.py --config configs/streaming_smoke.yaml \

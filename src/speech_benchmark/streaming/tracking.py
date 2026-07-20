@@ -3,9 +3,9 @@
 Every windowing/streaming stack faces the same problem: each time it re-derives
 sentences from the audio so far, it must decide which are *new*, which are
 *revisions* of an already-emitted sentence, and which are old enough to
-*finalize*. ``SentenceTracker`` centralizes that so the windowed, diart, and
-Voxtral adapters share one implementation (and one set of revision/churn
-semantics that the metrics depend on).
+*finalize*. ``SentenceTracker`` centralizes that so the windowed and diart
+adapters share one implementation (and one set of revision/churn semantics that
+the metrics depend on).
 
 A "current sentence" is a dict ``{start, end, text, speaker}`` in absolute audio
 time. Sentences are matched across updates by nearest start time within

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Preflight check for the native streaming stacks (diart-whisper,
-voxtral-realtime). Reports exactly what is ready and what is missing so you can
-get to a run on the lab machine with no guesswork. Read-only; downloads nothing.
+"""Preflight check for the diart-whisper streaming stack. Reports exactly what is
+ready and what is missing so you can get to a run on the lab machine with no
+guesswork. Read-only; downloads nothing.
 
   .venv-diart/bin/python scripts/check_streaming_env.py
-  .venv-diart/bin/python scripts/check_streaming_env.py --voxtral-endpoint http://127.0.0.1:8000/v1
 """
 
 import argparse
@@ -52,20 +51,8 @@ def _gated(repo: str):
     return _fn
 
 
-def _voxtral(endpoint: str):
-    def _fn():
-        import requests
-        r = requests.get(f"{endpoint.rstrip('/')}/models", timeout=5)
-        r.raise_for_status()
-        ids = [m.get("id") for m in r.json().get("data", [])]
-        return True, f"vLLM reachable at {endpoint}; models: {ids}"
-    return _fn
-
-
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--voxtral-endpoint", default="http://127.0.0.1:8000/v1")
-    args = ap.parse_args()
+    argparse.ArgumentParser(description=__doc__).parse_args()
 
     print("diart-whisper stack:")
     d_ok = check("diart install", _diart_import)
@@ -74,19 +61,12 @@ def main() -> None:
     s_ok = check("pyannote/segmentation (gated)", _gated("pyannote/segmentation"))
     e_ok = check("pyannote/embedding (gated)", _gated("pyannote/embedding"))
 
-    print("\nvoxtral-realtime stack (also needs everything above):")
-    v_ok = check("vLLM Voxtral server", _voxtral(args.voxtral_endpoint))
-
     diart_ready = all([d_ok, t_ok, s_ok, e_ok])
     print("\nSummary:")
     print(f"  diart-whisper:    {'READY' if diart_ready else 'NOT READY'}")
-    print(f"  voxtral-realtime: {'READY' if diart_ready and v_ok else 'NOT READY'}")
     if not diart_ready:
         print("\n  → run scripts/setup_diart.sh, accept the two pyannote pages, "
               "export HF_TOKEN.")
-    if not v_ok:
-        print("  → start the ASR server: scripts/run_voxtral_server.sh "
-              "(in .venv-voxtral).")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,6 @@ streaming_stacks:
   - configs/models/stream_window_turbo_pyannote31_sliding.yaml  # baseline (sliding)
   - configs/models/stream_window_medium_pyannote31.yaml         # cheaper baseline
   - configs/models/stream_diart_whisper.yaml       # native; enabled: false (.venv-diart)
-  - configs/models/stream_voxtral_realtime.yaml    # native; enabled: false (.venv-voxtral)
 
 metrics:
   der_collar: 0.5

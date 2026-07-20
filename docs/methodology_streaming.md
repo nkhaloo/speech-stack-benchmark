@@ -50,7 +50,7 @@ honestly, not to be large.
 
 | id | System | Kind | License | Notes |
 |---|---|---|---|---|
-| `stream-voxtral-realtime` | `Voxtral-Mini-4B-Realtime-2602` via local vLLM | **native streaming** | Apache-2.0, ungated (verified 2026-07-20) | 240 ms–2.4 s configurable delay; 13 langs incl. ar+zh; own env (`.venv-voxtral`). NB: the *batch* Voxtral-Mini-3B-2507 lacks ar+zh and fails the language filter. |
+| `whisperlive` | faster-whisper via WhisperLive (VAD + LocalAgreement stabilization) | **native streaming** | MIT | Streaming Whisper done right — stable, timestamped incremental output; covers all 5 languages (planned) |
 | `window-fw-large-v3-turbo` | faster-whisper large-v3-turbo + windowing wrapper | batch-in-window (**baseline**) | MIT | The batch winner, run incrementally, as the reference to beat |
 | `window-fw-medium` | faster-whisper medium + windowing wrapper | batch-in-window (baseline) | MIT | Cheaper baseline |
 
@@ -121,7 +121,7 @@ push(audio_chunk, t) -> [Emission]    # feed a frame, get zero+ (revisable) emis
 flush() -> [Emission]                 # end-of-stream: final emissions
 ```
 
-* **Native streaming** models (Voxtral Realtime, diart) implement `push` directly.
+* **Native streaming** systems (WhisperLive, diart) implement `push` directly.
 * **Batch** models (Whisper, pyannote-3.1) are wrapped by a generic
   **windowing driver** that buffers audio, re-invokes the batch adapter on a
   window (growing buffer for bounded sessions, or sliding window + speaker
@@ -175,7 +175,8 @@ numbers; the manifest records the host.
 ## 9. Pre-registered hypotheses (to confirm or overturn)
 
 * **H1.** Windowed large-v3-turbo remains competitive on final WER but pays a
-  materially worse latency/finalization-delay than Voxtral Realtime.
+  materially worse latency/finalization-delay than a native streaming ASR
+  (WhisperLive).
 * **H2.** Growing-buffer windowed pyannote-3.1 has *low* final DER but *high*
   speaker-label churn; diart has higher final DER but far lower churn — i.e. the
   choice is accuracy-vs-stability, not a clean win.
@@ -206,18 +207,12 @@ export HF_TOKEN=<token>
     --config configs/streaming.yaml --profile baseline --run-id <existing_run_id>
 ```
 
-**Native `voxtral-realtime`** (streaming ASR + diart) — also needs the vLLM server:
-```bash
-./scripts/setup_linux_gpu.sh --with-voxtral    # vLLM env
-./scripts/run_voxtral_server.sh                # serves Voxtral-Mini-4B-Realtime-2602 (separate terminal)
-# enable it in configs/models/stream_voxtral_realtime.yaml (enabled: true), then
-# run from the diart env (it is the HTTP client) against the same run id.
-```
+**Native streaming ASR (WhisperLive)** — planned: a WhisperLive server (faster-
+whisper backend) provides stable, timestamped incremental transcription, fused
+with the diart online diarizer. To be wired up as the streaming-ASR arm.
 
 The `--run-id` re-invocation is the multi-env pattern (§1): each stack contributes
 to one shared run from whatever env it needs; already-completed stacks are skipped.
-`voxtral.mode: chunked` runs today; `native` (true low-latency streaming) is a lab
-TODO — `check_streaming_env.py` probes the vLLM API to confirm the streaming route.
 
 ## 11. What this benchmark deliberately does not do
 

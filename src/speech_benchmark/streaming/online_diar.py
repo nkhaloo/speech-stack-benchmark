@@ -1,6 +1,5 @@
-"""Reusable diart online-diarization component, shared by the diart_whisper and
-voxtral_realtime stacks (both pair streaming ASR/windowed ASR with the same
-online diarizer).
+"""Reusable diart online-diarization component for streaming stacks that pair an
+ASR arm with the same online diarizer (e.g. diart_whisper).
 
 Wraps diart's ``SpeakerDiarization`` block API: audio is fed one step-sized 5 s
 window at a time (exactly as diart would run live), online clustering keeps

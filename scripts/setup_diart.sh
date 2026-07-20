@@ -18,10 +18,9 @@ PY="${PYTHON:-python3}"
 "$PY" -m venv .venv-diart
 .venv-diart/bin/pip install --upgrade pip
 
-# Project (for speech_benchmark) + ASR arms.
-#   faster-whisper -> diart_whisper stack; requests -> voxtral_realtime HTTP client.
+# Project (for speech_benchmark) + the diart_whisper ASR arm (faster-whisper).
+# websocket-client is kept for streaming-ASR clients (e.g. WhisperLive).
 .venv-diart/bin/pip install -e ".[dev]"
-#   faster-whisper -> diart_whisper stack; requests + websocket-client -> voxtral client.
 .venv-diart/bin/pip install faster-whisper requests websocket-client
 
 # diart + a torch stack compatible with pyannote.audio 3.x (verified importable).
@@ -40,10 +39,7 @@ PY
 
 cat <<'EOF'
 
-.venv-diart ready. This env runs BOTH native streaming stacks (it holds diart +
-the project; the Voxtral arm is just an HTTP client to the vLLM server):
-  * diart-whisper       (needs only this env)
-  * voxtral-realtime    (also needs the vLLM server: scripts/run_voxtral_server.sh)
+.venv-diart ready (holds diart + the project). Runs the diart-whisper stack.
 
 Before the first run (one time):
   * accept terms at https://huggingface.co/pyannote/segmentation
@@ -51,9 +47,8 @@ Before the first run (one time):
   * export HF_TOKEN=<your token>
   * verify readiness:  .venv-diart/bin/python scripts/check_streaming_env.py
 
-Then contribute a native stack to a streaming run (same --run-id resumes/extends):
-  # 1. enable it in configs/models/stream_diart_whisper.yaml (and/or
-  #    stream_voxtral_realtime.yaml): set `enabled: true`
+Then contribute the stack to a streaming run (same --run-id resumes/extends):
+  # 1. enable it in configs/models/stream_diart_whisper.yaml: set `enabled: true`
   # 2. run from this env against an existing run id:
   .venv-diart/bin/python scripts/run_streaming_benchmark.py \
       --config configs/streaming.yaml --profile baseline --run-id <existing_run_id>

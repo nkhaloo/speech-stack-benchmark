@@ -5,7 +5,6 @@ and emission bookkeeping are identical and live here.
 
 Used by:
   * ``diart_whisper``  — ASR arm = local faster-whisper
-  * ``voxtral_realtime`` — ASR arm = Voxtral Realtime via a local vLLM server
 """
 
 from __future__ import annotations

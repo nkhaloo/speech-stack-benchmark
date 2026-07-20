@@ -179,7 +179,8 @@ def test_windowed_stack_requires_cards():
 
 
 def test_native_stubs_unavailable():
-    for runtime in ("diart_whisper", "voxtral_realtime"):
-        ad = create_streaming_adapter({"id": "x", "runtime": runtime})
-        with pytest.raises(AdapterUnavailable):
-            ad.load()
+    # diart isn't installed in the base env, so the native stack reports
+    # unavailable rather than crashing the run.
+    ad = create_streaming_adapter({"id": "x", "runtime": "diart_whisper"})
+    with pytest.raises(AdapterUnavailable):
+        ad.load()
