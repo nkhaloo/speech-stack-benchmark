@@ -19,7 +19,11 @@ fi
 
 echo "Serving $MODEL (Realtime API) on port $PORT (Ctrl-C to stop)…"
 echo "Watch the startup log for:  Route: /v1/realtime"
-exec env VLLM_DISABLE_COMPILE_CACHE=1 .venv-voxtral/bin/vllm serve "$MODEL" \
+# VLLM_USE_FLASHINFER_SAMPLER=0: FlashInfer JIT-compiles a sampler kernel and
+# needs the CUDA toolkit (nvcc); many boxes have only the driver/runtime. The
+# native sampler needs no nvcc. Drop it if your box has a full CUDA toolkit.
+exec env VLLM_DISABLE_COMPILE_CACHE=1 VLLM_USE_FLASHINFER_SAMPLER=0 \
+  .venv-voxtral/bin/vllm serve "$MODEL" \
   --tokenizer-mode mistral \
   --compilation_config '{"cudagraph_mode":"PIECEWISE"}' \
   --port "$PORT"
