@@ -31,7 +31,7 @@ def load_track_config(path: str | Path) -> dict:
     path = Path(path)
     cfg = load_yaml(path)
     root = project_root()
-    for key in ("asr_models", "diarization_models"):
+    for key in ("asr_models", "diarization_models", "streaming_stacks"):
         resolved: list[dict] = []
         for entry in cfg.get(key, []):
             if isinstance(entry, str):

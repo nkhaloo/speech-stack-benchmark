@@ -1,0 +1,11 @@
+# Dummy streaming stack — reference-derived, seeded corruption/latency/revisions.
+# Zero downloads; drives the full streaming pipeline in tests and smoke runs.
+# Excluded from leaderboards (family: dummy) unless the run is dummy-only.
+id: dummy-stream
+family: dummy
+runtime: dummy_stream
+native: false
+wer_target: 0.12
+confusion_rate: 0.06
+latency_sec: 0.6
+revision_rate: 0.3

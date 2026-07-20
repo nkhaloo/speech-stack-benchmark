@@ -1,0 +1,15 @@
+# Streaming smoke config — dummy stack only, zero downloads. Exercises the full
+# streaming pipeline (runner -> emission cache -> metrics -> report).
+track: streaming
+gpu_index: 0
+
+streaming:
+  frame_sec: 0.5
+  latency_budget_sec: 2.0
+
+streaming_stacks:
+  - configs/models/stream_dummy.yaml
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false

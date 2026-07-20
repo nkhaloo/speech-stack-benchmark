@@ -295,6 +295,116 @@ class DiarizationResult:
 
 
 # ---------------------------------------------------------------------------
+# Streaming (incremental, speaker-attributed emissions)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Emission:
+    """One (possibly revised) speaker-attributed sentence emitted by a streaming
+    system at a point in simulated time.
+
+    ``sentence_id`` is stable across revisions of the *same* sentence, so the
+    stream ``[(id=0, "hello", rev=0), (id=0, "hello there", rev=1, final)]``
+    describes one sentence that was revised once before finalizing. Metrics read
+    the final emission per ``sentence_id`` for accuracy and the whole history for
+    latency/stability.
+    """
+
+    sentence_id: int
+    text: str
+    speaker: Optional[str] = None
+    start: Optional[float] = None      # audio start of the sentence
+    end: Optional[float] = None        # audio end of the sentence
+    audio_time: float = 0.0            # audio timestamp fed when this was produced
+    wall_time: float = 0.0             # simulated wall-clock time of emission
+    is_final: bool = False
+    revision: int = 0                  # how many times this sentence_id changed
+
+    def to_dict(self) -> dict:
+        return dataclasses.asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Emission":
+        return cls(**{k: d.get(k) for k in (
+            "sentence_id", "text", "speaker", "start", "end",
+            "audio_time", "wall_time", "is_final", "revision")})
+
+
+@dataclass
+class StreamingResult:
+    """Cached output of one streaming stack over one recording: the ordered
+    emission log plus performance stats. This is the streaming analogue of
+    ``ASRResult``/``DiarizationResult`` — reporting and metrics consume only
+    this and the reference."""
+
+    recording_id: str
+    model_id: str
+    emissions: list[Emission] = field(default_factory=list)
+    audio_duration_sec: Optional[float] = None
+    runtime_sec: Optional[float] = None      # total compute time (all steps)
+    load_time_sec: Optional[float] = None
+    resources: Optional[ResourceStats] = None
+    model_meta: dict = field(default_factory=dict)
+    streaming_meta: dict = field(default_factory=dict)  # contract copy (§5)
+    status: str = "completed"
+    error: Optional[str] = None
+    created_at: str = field(default_factory=utc_now_iso)
+
+    @property
+    def real_time_factor(self) -> Optional[float]:
+        if self.runtime_sec and self.audio_duration_sec:
+            return self.runtime_sec / self.audio_duration_sec
+        return None
+
+    def final_emissions(self) -> list["Emission"]:
+        """Last known state per sentence_id (the finalized transcript), ordered
+        by audio start then id. Prefers an ``is_final`` emission; falls back to
+        the latest emission for sentences that never finalized."""
+        latest: dict[int, Emission] = {}
+        final: dict[int, Emission] = {}
+        for e in self.emissions:
+            latest[e.sentence_id] = e
+            if e.is_final:
+                final[e.sentence_id] = e
+        chosen = {sid: final.get(sid, latest[sid]) for sid in latest}
+        return sorted(chosen.values(),
+                      key=lambda e: (e.start if e.start is not None else e.audio_time,
+                                     e.sentence_id))
+
+    def to_dict(self) -> dict:
+        return {
+            "schema": "streaming_result/v1",
+            "recording_id": self.recording_id,
+            "model_id": self.model_id,
+            "emissions": [e.to_dict() for e in self.emissions],
+            "audio_duration_sec": self.audio_duration_sec,
+            "runtime_sec": self.runtime_sec,
+            "load_time_sec": self.load_time_sec,
+            "real_time_factor": self.real_time_factor,
+            "resources": self.resources.to_dict() if self.resources else None,
+            "model_meta": self.model_meta,
+            "streaming_meta": self.streaming_meta,
+            "status": self.status,
+            "error": self.error,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "StreamingResult":
+        return cls(
+            recording_id=d["recording_id"], model_id=d["model_id"],
+            emissions=[Emission.from_dict(e) for e in d.get("emissions", [])],
+            audio_duration_sec=d.get("audio_duration_sec"),
+            runtime_sec=d.get("runtime_sec"), load_time_sec=d.get("load_time_sec"),
+            resources=ResourceStats.from_dict(d.get("resources")),
+            model_meta=d.get("model_meta", {}),
+            streaming_meta=d.get("streaming_meta", {}),
+            status=d.get("status", "completed"), error=d.get("error"),
+            created_at=d.get("created_at", utc_now_iso()),
+        )
+
+
+# ---------------------------------------------------------------------------
 # Reference (ground truth) and recordings
 # ---------------------------------------------------------------------------
 

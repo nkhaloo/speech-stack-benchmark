@@ -1,0 +1,18 @@
+# Streaming baseline — cheaper ASR (faster-whisper medium) + pyannote-3.1,
+# growing buffer. Lower-cost reference point.
+id: window-medium-pyannote31
+family: windowed
+runtime: windowed_stack
+native: false
+asr: configs/models/asr_faster_whisper_medium.yaml
+diarization: configs/models/diar_pyannote_31.yaml
+force_language: false
+sentence_gap_sec: 0.8
+window:
+  policy: growing
+  emit_every_sec: 2.0
+  finalize_after_sec: 5.0
+  match_tolerance_sec: 1.0
+license: MIT
+weights_license: MIT
+deployment_notes: "Baseline: cheaper batch stack in growing-buffer streaming mode."

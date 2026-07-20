@@ -39,6 +39,7 @@ class RunContext:
         self.run_dir = self.artifacts_dir / "runs" / run_id
         for sub in ("config", "environment", "logs",
                     "predictions/asr", "predictions/diarization", "predictions/combined",
+                    "predictions/streaming",
                     "metrics/per_recording", "metrics/per_language",
                     "metrics/per_model", "metrics/per_stack",
                     "tables", "charts", "errors", "reports"):
@@ -101,6 +102,10 @@ class RunContext:
     def combined_path(self, asr_id: str, diar_id: str, recording_id: str) -> Path:
         return (self.run_dir / "predictions" / "combined"
                 / f"{_safe(asr_id)}__{_safe(diar_id)}" / f"{_safe(recording_id)}.json")
+
+    def streaming_path(self, stack_id: str, recording_id: str) -> Path:
+        return (self.run_dir / "predictions" / "streaming"
+                / _safe(stack_id) / f"{_safe(recording_id)}.json")
 
     # -- logging ------------------------------------------------------------
     def logger(self, name: str) -> logging.Logger:

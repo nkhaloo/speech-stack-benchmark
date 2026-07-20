@@ -1,0 +1,20 @@
+# Streaming BASELINE — the batch winner (large-v3-turbo + pyannote-3.1) run
+# incrementally via the generic windowing wrapper. Growing buffer keeps speaker
+# IDs globally consistent (bounded-session assumption; see methodology_streaming).
+id: window-turbo-pyannote31
+family: windowed
+runtime: windowed_stack
+native: false
+asr: configs/models/asr_faster_whisper_large_v3_turbo.yaml
+diarization: configs/models/diar_pyannote_31.yaml
+force_language: false
+sentence_gap_sec: 0.8
+window:
+  policy: growing          # growing | sliding
+  emit_every_sec: 2.0      # re-diarize/transcribe the buffer this often
+  window_sec: 30.0         # only used when policy: sliding
+  finalize_after_sec: 5.0  # a sentence older than this can no longer be revised
+  match_tolerance_sec: 1.0
+license: MIT
+weights_license: MIT
+deployment_notes: "Baseline: batch stack in growing-buffer streaming mode."

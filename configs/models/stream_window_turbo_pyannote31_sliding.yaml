@@ -1,0 +1,20 @@
+# Streaming baseline variant — same models, SLIDING window (constant cost,
+# handles unbounded sessions). Expected to churn speaker labels more than the
+# growing-buffer variant; the benchmark measures that trade-off (H2).
+id: window-turbo-pyannote31-sliding
+family: windowed
+runtime: windowed_stack
+native: false
+asr: configs/models/asr_faster_whisper_large_v3_turbo.yaml
+diarization: configs/models/diar_pyannote_31.yaml
+force_language: false
+sentence_gap_sec: 0.8
+window:
+  policy: sliding
+  emit_every_sec: 2.0
+  window_sec: 30.0
+  finalize_after_sec: 5.0
+  match_tolerance_sec: 1.0
+license: MIT
+weights_license: MIT
+deployment_notes: "Baseline: batch stack in sliding-window streaming mode."
