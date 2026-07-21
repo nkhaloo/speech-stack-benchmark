@@ -213,3 +213,11 @@ def test_whisperlive_protocol_tracks_latest_segments():
         "uid": "test-session", "segments": segments,
     }))
     assert client.snapshot() == segments
+
+
+def test_diart_card_bounds_online_speaker_clusters():
+    from speech_benchmark.config import load_yaml, project_root
+
+    card = load_yaml(project_root() / "configs/models/stream_diart_whisper.yaml")
+    assert card["diart"]["max_speakers"] == 4
+    assert card["diart"]["delta_new"] > 1.0

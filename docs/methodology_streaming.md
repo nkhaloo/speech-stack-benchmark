@@ -216,6 +216,11 @@ The WhisperLive setup deliberately omits microphone-only PyAudio and installs
 the CUDA 12 cuBLAS/cuDNN runtime libraries required by CTranslate2 inside the
 venv, so neither PortAudio headers nor root access are required.
 
+Diart uses its published AMI hyperparameters (`tau=0.507`, `rho=0.006`,
+`delta=1.057`) and caps online clustering at four speakers. The corpus contains
+at most three speakers, so the cap leaves headroom while preventing runaway
+cluster creation; it does not use each recording's reference speaker count.
+
 The `--run-id` re-invocation is the multi-env pattern (§1): each stack contributes
 to one shared run from whatever env it needs; already-completed stacks are skipped.
 

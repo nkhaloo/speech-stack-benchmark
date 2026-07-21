@@ -55,6 +55,7 @@ class OnlineDiarizer:
             tau_active=float(self.cfg.get("tau_active", 0.5)),
             rho_update=float(self.cfg.get("rho_update", 0.1)),
             delta_new=float(self.cfg.get("delta_new", 0.57)),
+            max_speakers=int(self.cfg.get("max_speakers", 20)),
             device=torch.device(device),
         )
         self._pipeline = SpeakerDiarization(config)
