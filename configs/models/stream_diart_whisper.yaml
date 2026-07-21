@@ -32,14 +32,12 @@ whisperlive:
   model: large-v3-turbo
   use_vad: true
   word_timestamps: true
-  # Faster LocalAgreement promotion: require three matching snapshots and keep
-  # enough recent context for corrections without carrying a long stale tail.
-  same_output_threshold: 3
-  send_last_n_segments: 10
+  same_output_threshold: 5
+  send_last_n_segments: 20
   response_wait_sec: 0.05
   ready_timeout_sec: 300.0
   flush_timeout_sec: 20.0
-  finalize_after_sec: 3.0
+  finalize_after_sec: 5.0
   match_tolerance_sec: 1.0
 license: MIT (diart) + gated pyannote weights
 weights_license: MIT

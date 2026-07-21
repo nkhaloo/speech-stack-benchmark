@@ -212,13 +212,6 @@ WhisperLive WebSocket in 0.5 s frames, fuses each segment snapshot with diart's
 online speaker turns, then stops the server. Set `WHISPERLIVE_PORT` if port 9090
 is occupied.
 
-Lexical output is emitted provisionally as soon as WhisperLive responds; diart
-then attaches or revises the speaker label without blocking first-token output.
-The promoted settings use WhisperLive LocalAgreement threshold 3, retain 10
-recent segments, and finalize an unchanged sentence after 3 seconds. Latency
-metrics separately retain first lexical-token and first speaker-attributed-token
-times, while stability metrics separate lexical from speaker-only revisions.
-
 The WhisperLive setup deliberately omits microphone-only PyAudio and installs
 the CUDA 12 cuBLAS/cuDNN runtime libraries required by CTranslate2 inside the
 venv, so neither PortAudio headers nor root access are required.

@@ -29,8 +29,7 @@ STREAM_CFG = {
 
 def test_emission_and_streaming_result_roundtrip():
     e = Emission(sentence_id=3, text="hi there", speaker="SPK01", start=1.0,
-                 end=2.0, audio_time=2.5, wall_time=3.1,
-                 processing_offset_sec=0.2, is_final=True, revision=2)
+                 end=2.0, audio_time=2.5, wall_time=3.1, is_final=True, revision=2)
     assert Emission.from_dict(e.to_dict()) == e
     sr = StreamingResult(recording_id="r1", model_id="m1", emissions=[e],
                          audio_duration_sec=10.0, runtime_sec=1.0)
@@ -97,8 +96,6 @@ def test_reconstruct_and_metrics():
         assert key in m
     assert 0.0 <= m["wer"] <= 1.0
     assert m["time_to_first_token_sec"] == 1.6
-    assert m["time_to_first_speaker_token_sec"] == 1.6
-    assert m["lexical_revision_rate"] == 0.0
 
 
 def test_streaming_end_to_end(dummy_dataset, tmp_path):
@@ -183,21 +180,6 @@ def test_sentence_tracker_final_flushes_all():
                     final=True)
     finals = {x.sentence_id for x in out if x.is_final}
     assert finals == {0, 1}
-
-
-def test_provisional_text_preserves_attached_speaker():
-    from speech_benchmark.streaming.tracking import SentenceTracker
-    tr = SentenceTracker()
-    tr.update([{"start": 0.0, "end": 1.0, "text": "hello", "speaker": None}], 1.0)
-    attached = tr.update(
-        [{"start": 0.0, "end": 1.0, "text": "hello", "speaker": "A"}], 1.5)
-    assert attached[-1].speaker == "A"
-
-    revised = tr.update(
-        [{"start": 0.0, "end": 1.2, "text": "hello there", "speaker": None}],
-        2.0, preserve_existing_speaker=True)
-    assert revised[-1].text == "hello there"
-    assert revised[-1].speaker == "A"
 
 
 def test_windowed_stack_requires_cards():

@@ -93,29 +93,24 @@ def generate_streaming_report(run_dir: str | Path) -> Path:
 
     # B. Latency
     lines.append("\n## B. Latency (seconds, lower is better)\n")
-    lines.append("| Stack | First lexical token (median) | First speaker token (median) | Finalization delay (median) | Finalization delay (p90) |")
-    lines.append("|:--|--:|--:|--:|--:|")
+    lines.append("| Stack | Time-to-first-token (median) | Finalization delay (median) | Finalization delay (p90) |")
+    lines.append("|:--|--:|--:|--:|")
     for st in stacks:
         ttft, _ = _macro(completed, st, "time_to_first_token_sec")
-        speaker_ttft, _ = _macro(completed, st, "time_to_first_speaker_token_sec")
         fd, _ = _macro(completed, st, "finalization_delay_median_sec")
         fd90, _ = _macro(completed, st, "finalization_delay_p90_sec")
-        lines.append(f"| `{st}` | {_fmt(ttft, 2)} | {_fmt(speaker_ttft, 2)} | "
-                     f"{_fmt(fd, 2)} | {_fmt(fd90, 2)} |")
+        lines.append(f"| `{st}` | {_fmt(ttft, 2)} | {_fmt(fd, 2)} | {_fmt(fd90, 2)} |")
 
     # C. Stability
     lines.append("\n## C. Stability (lower is better)\n")
-    lines.append("| Stack | Revision rate | Lexical revision rate | Speaker revision rate | Speaker-label churn | Token flicker | Streaming RTF |")
-    lines.append("|:--|--:|--:|--:|--:|--:|--:|")
+    lines.append("| Stack | Revision rate | Speaker-label churn | Token flicker | Streaming RTF |")
+    lines.append("|:--|--:|--:|--:|--:|")
     for st in stacks:
         rr, _ = _macro(completed, st, "revision_rate")
-        lexical_rr, _ = _macro(completed, st, "lexical_revision_rate")
-        speaker_rr, _ = _macro(completed, st, "speaker_revision_rate")
         ch, _ = _macro(completed, st, "speaker_label_churn")
         tf, _ = _macro(completed, st, "token_flicker")
         rtf, _ = _macro(completed, st, "streaming_rtf")
-        lines.append(f"| `{st}` | {_fmt(rr)} | {_fmt(lexical_rr)} | "
-                     f"{_fmt(speaker_rr)} | {_fmt(ch)} | {_fmt(tf)} | {_fmt(rtf)} |")
+        lines.append(f"| `{st}` | {_fmt(rr)} | {_fmt(ch)} | {_fmt(tf)} | {_fmt(rtf)} |")
 
     # Per-language cpWER
     if "cpwer" in completed.columns:

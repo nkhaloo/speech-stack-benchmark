@@ -141,12 +141,9 @@ class StreamingRunner:
                     ems = adapter.push(audio[a0:a1], audio_time_end)
                     dt = time.perf_counter() - t0
                     compute_total += dt
-                    frame_clock = max(sim_clock, audio_time_end)
+                    sim_clock = max(sim_clock, audio_time_end) + dt
                     for e in ems:
-                        offset = (e.processing_offset_sec
-                                  if e.processing_offset_sec is not None else dt)
-                        e.wall_time = frame_clock + min(max(0.0, offset), dt)
-                    sim_clock = frame_clock + dt
+                        e.wall_time = sim_clock
                     emissions.extend(ems)
                 t0 = time.perf_counter()
                 ems = adapter.flush()
