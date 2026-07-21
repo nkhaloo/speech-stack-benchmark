@@ -206,8 +206,8 @@ export HF_TOKEN=<token>
 ./scripts/run_diart_whisperlive.sh baseline
 ```
 
-The run script starts a localhost WhisperLive server with the faster-whisper
-`large-v3-turbo` model, feeds the already-prepared baseline manifest through the
+The run script starts a localhost WhisperLive server with the CTranslate2
+`deepdml/faster-whisper-large-v3-turbo-ct2` model, feeds the already-prepared baseline manifest through the
 WhisperLive WebSocket in 0.5 s frames, fuses each segment snapshot with diart's
 online speaker turns, then stops the server. Set `WHISPERLIVE_PORT` if port 9090
 is occupied.

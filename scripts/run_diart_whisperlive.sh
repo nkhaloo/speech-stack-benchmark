@@ -23,7 +23,7 @@ if [[ ! -f "$MANIFEST" ]]; then
 fi
 
 .venv-whisperlive/bin/python scripts/run_whisperlive_server.py \
-  --port "$PORT" --model large-v3-turbo &
+  --port "$PORT" --model deepdml/faster-whisper-large-v3-turbo-ct2 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT INT TERM
 
