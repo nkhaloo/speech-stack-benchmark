@@ -46,10 +46,17 @@ class ResourceMonitor:
                 gpu_name = name.decode() if isinstance(name, bytes) else str(name)
             except Exception:
                 handle = None
-        while not self._stop.is_set():
+        # Always take one sample. Very fast smoke adapters can exit the context
+        # before the sampler thread gets scheduled.
+        while True:
             try:
                 rss = proc.memory_info().rss
-                for child in proc.children(recursive=True):
+                peak_ram = max(peak_ram, rss)
+                try:
+                    children = proc.children(recursive=True)
+                except (psutil.Error, PermissionError):
+                    children = []
+                for child in children:
                     try:
                         rss += child.memory_info().rss
                     except psutil.Error:
@@ -60,7 +67,8 @@ class ResourceMonitor:
                     peak_vram = max(peak_vram, mem.used)
             except Exception:
                 pass
-            self._stop.wait(self.interval)
+            if self._stop.wait(self.interval):
+                break
         self.stats.peak_ram_mb = round(peak_ram / 1e6, 1)
         if handle is not None:
             self.stats.peak_vram_mb = round(peak_vram / 1e6, 1)

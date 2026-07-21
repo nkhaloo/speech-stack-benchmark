@@ -1,18 +1,15 @@
-# Streaming NATIVE — diart online diarization (stable online speaker IDs) +
-# windowed faster-whisper for the transcript. Disabled by default: needs the
-# `diart` install + gated pyannote weights in a dedicated .venv-diart, then
-# re-invoke the runner with the same --run-id from that env.
+# Streaming NATIVE — diart online diarization + a local WhisperLive server
+# backed by faster-whisper large-v3-turbo.
 #
 # NOTE: diart's defaults are pyannote/segmentation + pyannote/embedding — these
 # DIFFER from batch pyannote-3.1, so accuracy does not transfer; re-measure.
-id: diart-whisper
+id: diart-whisperlive-large-v3-turbo
 family: diart
-runtime: diart_whisper
+runtime: diart_whisperlive
 native: true
-enabled: false
-# ASR arm (windowed) — reuses the benchmarked Whisper card.
-asr: configs/models/asr_faster_whisper_large_v3_turbo.yaml
-force_language: false
+enabled: true
+model: large-v3-turbo
+force_language: true
 sentence_gap_sec: 0.8
 # diart online diarization arm.
 diart:
@@ -25,13 +22,20 @@ diart:
   rho_update: 0.1
   delta_new: 0.57
   device: cuda
-window:                # Whisper (ASR) windowing — diarization is online, not windowed
-  policy: growing
-  emit_every_sec: 2.0
-  window_sec: 30.0
+whisperlive:
+  host: 127.0.0.1
+  port: 9090
+  model: large-v3-turbo
+  use_vad: true
+  word_timestamps: true
+  same_output_threshold: 5
+  send_last_n_segments: 20
+  response_wait_sec: 0.05
+  ready_timeout_sec: 300.0
+  flush_timeout_sec: 20.0
   finalize_after_sec: 5.0
   match_tolerance_sec: 1.0
 license: MIT (diart) + gated pyannote weights
 weights_license: MIT
 gated: true
-deployment_notes: "Native online diarization; separate .venv-diart; re-verify licenses/langs."
+deployment_notes: "WhisperLive server and .venv-diart client run together on the GPU."

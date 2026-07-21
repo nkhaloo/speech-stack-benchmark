@@ -4,7 +4,7 @@
 # diart pulls an incompatible torch/torchaudio/torchvision by default (its deps
 # resolve to a torch that breaks pyannote.audio 3.x import); we pin a compatible
 # set. Also installs the project (editable) so `speech_benchmark` imports, and
-# faster-whisper for the ASR arm.
+# websocket-client for the WhisperLive ASR arm (the server has its own env).
 #
 # After setup you MUST, once:
 #   1. accept terms on huggingface.co for BOTH gated models used by diart's
@@ -21,7 +21,7 @@ PY="${PYTHON:-python3}"
 # Project (for speech_benchmark) + the diart_whisper ASR arm (faster-whisper).
 # websocket-client is kept for streaming-ASR clients (e.g. WhisperLive).
 .venv-diart/bin/pip install -e ".[dev]"
-.venv-diart/bin/pip install faster-whisper requests websocket-client
+.venv-diart/bin/pip install requests websocket-client
 
 # diart + a torch stack compatible with pyannote.audio 3.x (verified importable).
 .venv-diart/bin/pip install diart
@@ -39,7 +39,7 @@ PY
 
 cat <<'EOF'
 
-.venv-diart ready (holds diart + the project). Runs the diart-whisper stack.
+.venv-diart ready (holds diart + the benchmark's WhisperLive client).
 
 Before the first run (one time):
   * accept terms at https://huggingface.co/pyannote/segmentation
@@ -47,9 +47,7 @@ Before the first run (one time):
   * export HF_TOKEN=<your token>
   * verify readiness:  .venv-diart/bin/python scripts/check_streaming_env.py
 
-Then contribute the stack to a streaming run (same --run-id resumes/extends):
-  # 1. enable it in configs/models/stream_diart_whisper.yaml: set `enabled: true`
-  # 2. run from this env against an existing run id:
-  .venv-diart/bin/python scripts/run_streaming_benchmark.py \
-      --config configs/streaming.yaml --profile baseline --run-id <existing_run_id>
+Then set up and run WhisperLive:
+  ./scripts/setup_whisperlive.sh
+  ./scripts/run_diart_whisperlive.sh baseline
 EOF

@@ -1,0 +1,15 @@
+# Focused test track: diart + WhisperLive/faster-whisper large-v3-turbo only.
+track: streaming
+gpu_index: 0
+languages: [en, es, fr, ar, zh]
+
+streaming:
+  frame_sec: 0.5
+  latency_budget_sec: 2.0
+
+streaming_stacks:
+  - configs/models/stream_diart_whisper.yaml
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false

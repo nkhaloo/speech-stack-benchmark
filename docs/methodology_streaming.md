@@ -195,21 +195,22 @@ python scripts/run_streaming_benchmark.py --config configs/streaming.yaml --prof
 # -> reports/results_streaming.md
 ```
 
-**Native `diart-whisper`** (streaming diarization) — its own env + gated weights:
+**Focused `diart + WhisperLive large-v3-turbo` test** — separate server and
+diart client environments + gated weights:
 ```bash
 ./scripts/setup_diart.sh                       # creates .venv-diart (pinned torch)
+./scripts/setup_whisperlive.sh                 # creates .venv-whisperlive
 # accept terms: huggingface.co/pyannote/segmentation and /pyannote/embedding
 export HF_TOKEN=<token>
 .venv-diart/bin/python scripts/check_streaming_env.py     # readiness preflight
-# enable it in configs/models/stream_diart_whisper.yaml (enabled: true), then
-# contribute to the SAME run id from the diart env:
-.venv-diart/bin/python scripts/run_streaming_benchmark.py \
-    --config configs/streaming.yaml --profile baseline --run-id <existing_run_id>
+./scripts/run_diart_whisperlive.sh baseline
 ```
 
-**Native streaming ASR (WhisperLive)** — planned: a WhisperLive server (faster-
-whisper backend) provides stable, timestamped incremental transcription, fused
-with the diart online diarizer. To be wired up as the streaming-ASR arm.
+The run script starts a localhost WhisperLive server with the faster-whisper
+`large-v3-turbo` model, feeds the already-prepared baseline manifest through the
+WhisperLive WebSocket in 0.5 s frames, fuses each segment snapshot with diart's
+online speaker turns, then stops the server. Set `WHISPERLIVE_PORT` if port 9090
+is occupied.
 
 The `--run-id` re-invocation is the multi-env pattern (§1): each stack contributes
 to one shared run from whatever env it needs; already-completed stacks are skipped.

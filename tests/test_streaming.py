@@ -184,3 +184,32 @@ def test_native_stubs_unavailable():
     ad = create_streaming_adapter({"id": "x", "runtime": "diart_whisper"})
     with pytest.raises(AdapterUnavailable):
         ad.load()
+
+
+def test_whisperlive_protocol_tracks_latest_segments():
+    import json
+    import threading
+
+    from speech_benchmark.streaming.whisperlive_client import WhisperLiveClient
+
+    client = WhisperLiveClient({"model": "large-v3-turbo"})
+    client._uid = "test-session"
+    client._ready = threading.Event()
+    client._closed = threading.Event()
+    client._condition = threading.Condition()
+    client._segments = []
+    client._version = 0
+    client._error = None
+
+    client._on_message(None, json.dumps({
+        "uid": "test-session", "message": "SERVER_READY",
+        "backend": "faster_whisper",
+    }))
+    assert client._ready.is_set()
+
+    segments = [{"start": "0.0", "end": "1.2", "text": " hello",
+                 "completed": False}]
+    client._on_message(None, json.dumps({
+        "uid": "test-session", "segments": segments,
+    }))
+    assert client.snapshot() == segments
