@@ -1,0 +1,21 @@
+# Experimental focused track: change only diart's segmentation model from
+# pyannote/segmentation to pyannote/segmentation-3.0. Keep this separate from
+# the promoted baseline so results remain directly comparable and resumable.
+track: streaming
+gpu_index: 0
+languages: [en, es, fr, ar, zh]
+
+streaming:
+  frame_sec: 0.5
+  latency_budget_sec: 2.0
+
+streaming_stacks:
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: diart-segmentation-3.0-whisperlive-large-v3-turbo
+      diart:
+        segmentation: pyannote/segmentation-3.0
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false

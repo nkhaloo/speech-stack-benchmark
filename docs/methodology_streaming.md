@@ -225,6 +225,20 @@ cpWER and fused-timeline DER while cutting speaker-label churn substantially,
 with no material RTF cost. The prior 0.5 s baseline remains preserved under
 its original run id.
 
+To compare pyannote's newer segmentation model without changing the promoted
+stack, run the isolated `segmentation-3.0` variant:
+
+```bash
+STREAMING_CONFIG=configs/streaming_diart_whisperlive_segmentation3.yaml \
+STREAMING_TAG=diart-whisperlive-segmentation3-latency2-v1 \
+./scripts/run_diart_whisperlive.sh baseline
+```
+
+This changes only the segmentation weights to
+`pyannote/segmentation-3.0`; the `pyannote/embedding` model, diart AMI
+thresholds, 2 s latency, and WhisperLive settings remain unchanged. Treat its
+thresholds as untuned until the comparison is complete.
+
 **Parameter-tuning smoke ladder** — runs the unchanged control plus six
 predeclared variants on the smoke corpus in one resumable comparison run:
 
