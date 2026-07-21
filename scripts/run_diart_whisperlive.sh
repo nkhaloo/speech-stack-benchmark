@@ -19,6 +19,10 @@ if [[ ! -x .venv-diart/bin/python ]]; then
   echo "Missing .venv-diart; run scripts/setup_diart.sh first." >&2
   exit 1
 fi
+if [[ -z "${HF_TOKEN:-${HUGGING_FACE_HUB_TOKEN:-}}" ]]; then
+  echo "Missing Hugging Face token; export HF_TOKEN with a valid replacement token." >&2
+  exit 1
+fi
 if [[ ! -f "$MANIFEST" ]]; then
   echo "Missing dataset: $MANIFEST" >&2
   echo "Prepare it first: python scripts/prepare_datasets.py --profile $PROFILE" >&2
