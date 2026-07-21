@@ -6,6 +6,9 @@ cd "$(dirname "$0")/.."
 PROFILE="${1:-baseline}"
 MANIFEST="artifacts/datasets/synthetic_commonvoice_mdc/$PROFILE/manifest.jsonl"
 PORT="${WHISPERLIVE_PORT:-9090}"
+CONFIG="${STREAMING_CONFIG:-configs/streaming_diart_whisperlive.yaml}"
+RUN_TAG="${STREAMING_TAG:-diart-whisperlive-turbo}"
+FORCE="${STREAMING_FORCE:-1}"
 export SPEECH_BENCHMARK_WHISPERLIVE_PORT="$PORT"
 
 if [[ ! -x .venv-whisperlive/bin/python ]]; then
@@ -48,7 +51,14 @@ trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT INT TERM
 # only avoids racing the server process before it binds the port.
 sleep 2
 
-.venv-diart/bin/python scripts/run_streaming_benchmark.py \
-  --config configs/streaming_diart_whisperlive.yaml \
-  --profile "$PROFILE" --manifest "$MANIFEST" \
-  --tag diart-whisperlive-turbo --force
+RUN_ARGS=(
+  scripts/run_streaming_benchmark.py
+  --config "$CONFIG"
+  --profile "$PROFILE"
+  --manifest "$MANIFEST"
+  --tag "$RUN_TAG"
+)
+if [[ "$FORCE" == "1" ]]; then
+  RUN_ARGS+=(--force)
+fi
+.venv-diart/bin/python "${RUN_ARGS[@]}"

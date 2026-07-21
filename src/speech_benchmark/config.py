@@ -36,6 +36,9 @@ def load_track_config(path: str | Path) -> dict:
         for entry in cfg.get(key, []):
             if isinstance(entry, str):
                 mc = load_yaml(resolve_path(entry, root))
+            elif isinstance(entry, dict) and "card" in entry:
+                mc = load_yaml(resolve_path(entry["card"], root))
+                mc = _deep_merge(mc, entry.get("overrides", {}))
             else:
                 mc = dict(entry)
             if not mc.get("enabled", True):
@@ -43,6 +46,17 @@ def load_track_config(path: str | Path) -> dict:
             resolved.append(mc)
         cfg[key] = resolved
     return cfg
+
+
+def _deep_merge(base: dict, overrides: dict) -> dict:
+    """Recursively merge config overrides without mutating either input."""
+    out = dict(base)
+    for key, value in overrides.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = _deep_merge(out[key], value)
+        else:
+            out[key] = value
+    return out
 
 
 def get(cfg: dict, dotted: str, default: Any = None) -> Any:

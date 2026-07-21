@@ -231,3 +231,19 @@ def test_diart_card_bounds_online_speaker_clusters():
     card = load_yaml(project_root() / "configs/models/stream_diart_whisper.yaml")
     assert card["diart"]["max_speakers"] == 4
     assert card["diart"]["delta_new"] > 1.0
+
+
+def test_tuning_track_applies_nested_card_overrides():
+    from speech_benchmark.config import load_track_config, project_root
+
+    cfg = load_track_config(
+        project_root() / "configs/streaming_diart_whisperlive_tuning.yaml")
+    stacks = {s["id"]: s for s in cfg["streaming_stacks"]}
+    assert len(stacks) == 7
+    assert stacks["tune-control"]["whisperlive"]["finalize_after_sec"] == 5.0
+    assert stacks["tune-finalize-2s"]["whisperlive"]["finalize_after_sec"] == 2.0
+    assert stacks["tune-finalize-2s"]["whisperlive"]["model"] == "large-v3-turbo"
+    assert stacks["tune-diart-latency-2s"]["diart"]["latency"] == 2.0
+    combined = stacks["tune-combined-candidate"]
+    assert combined["diart"]["delta_new"] == 0.95
+    assert combined["whisperlive"]["same_output_threshold"] == 3

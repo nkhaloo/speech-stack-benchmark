@@ -221,6 +221,19 @@ Diart uses its published AMI hyperparameters (`tau=0.507`, `rho=0.006`,
 at most three speakers, so the cap leaves headroom while preventing runaway
 cluster creation; it does not use each recording's reference speaker count.
 
+**Parameter-tuning smoke ladder** — runs the unchanged control plus six
+predeclared variants on the smoke corpus in one resumable comparison run:
+
+```bash
+./scripts/run_streaming_tuning_smoke.sh
+```
+
+The single-variable variants test finalization at 2 s, WhisperLive stability
+threshold 3, diart latency at 1 s and 2 s, and `delta_new=0.95`. A combined
+candidate is included as a hypothesis only and must be interpreted after the
+single-variable rows. The baseline card and completed baseline artifacts are
+not modified.
+
 The `--run-id` re-invocation is the multi-env pattern (§1): each stack contributes
 to one shared run from whatever env it needs; already-completed stacks are skipped.
 

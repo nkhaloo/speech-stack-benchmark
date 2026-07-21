@@ -1,0 +1,59 @@
+# One-variable-at-a-time smoke ladder for diart + WhisperLive tuning.
+# The production/baseline card is inherited and never modified by this run.
+track: streaming-tuning
+gpu_index: 0
+languages: [en, es, fr, ar, zh]
+
+streaming:
+  frame_sec: 0.5
+  latency_budget_sec: 2.0
+
+streaming_stacks:
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-control
+
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-finalize-2s
+      whisperlive:
+        finalize_after_sec: 2.0
+
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-stability-3
+      whisperlive:
+        same_output_threshold: 3
+
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-diart-latency-1s
+      diart:
+        latency: 1.0
+
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-diart-latency-2s
+      diart:
+        latency: 2.0
+
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-delta-095
+      diart:
+        delta_new: 0.95
+
+  # Hypothesis only: judge it after the single-variable rows, not by itself.
+  - card: configs/models/stream_diart_whisper.yaml
+    overrides:
+      id: tune-combined-candidate
+      diart:
+        latency: 1.0
+        delta_new: 0.95
+      whisperlive:
+        same_output_threshold: 3
+        finalize_after_sec: 2.0
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false
