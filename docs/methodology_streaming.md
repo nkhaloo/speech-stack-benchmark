@@ -212,6 +212,10 @@ WhisperLive WebSocket in 0.5 s frames, fuses each segment snapshot with diart's
 online speaker turns, then stops the server. Set `WHISPERLIVE_PORT` if port 9090
 is occupied.
 
+The WhisperLive setup deliberately omits microphone-only PyAudio and installs
+the CUDA 12 cuBLAS/cuDNN runtime libraries required by CTranslate2 inside the
+venv, so neither PortAudio headers nor root access are required.
+
 The `--run-id` re-invocation is the multi-env pattern (§1): each stack contributes
 to one shared run from whatever env it needs; already-completed stacks are skipped.
 

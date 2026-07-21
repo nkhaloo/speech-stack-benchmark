@@ -22,6 +22,14 @@ if [[ ! -f "$MANIFEST" ]]; then
   exit 1
 fi
 
+# CTranslate2/faster-whisper wheels use CUDA 12 even when pip's current torch
+# wheel pulls CUDA 13. The cu12 wheels install without root; expose their shared
+# libraries to the WhisperLive server process.
+WHISPERLIVE_SITE="$(
+  .venv-whisperlive/bin/python -c 'import site; print(site.getsitepackages()[0])'
+)"
+export LD_LIBRARY_PATH="${WHISPERLIVE_SITE}/nvidia/cublas/lib:${WHISPERLIVE_SITE}/nvidia/cudnn/lib:${LD_LIBRARY_PATH:-}"
+
 .venv-whisperlive/bin/python scripts/run_whisperlive_server.py \
   --port "$PORT" --model deepdml/faster-whisper-large-v3-turbo-ct2 &
 SERVER_PID=$!
