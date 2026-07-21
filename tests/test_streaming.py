@@ -10,6 +10,7 @@ from speech_benchmark.schemas import (Emission, Reference, ReferenceTurn,
 from speech_benchmark.streaming import (AdapterUnavailable,
                                         create_streaming_adapter)
 from speech_benchmark.streaming.metrics import reconstruct, streaming_metrics
+from speech_benchmark.streaming.diagnostics import generate_streaming_diagnostics
 from speech_benchmark.streaming.report import generate_streaming_report
 from speech_benchmark.streaming.runner import StreamingRunner
 
@@ -128,6 +129,15 @@ def test_streaming_end_to_end(dummy_dataset, tmp_path):
     assert "Streaming speech-stack benchmark" in md
     assert "Dummy-only run" in md  # flagged, not silently ranked
     assert "Final accuracy" in md
+
+    diagnostics = generate_streaming_diagnostics(ctx.run_dir)
+    text = diagnostics.read_text()
+    assert "cache-only analysis" in text
+    assert "fused-timeline DER" in text
+    payload = load_json(ctx.run_dir / "metrics/streaming_diagnostics.json")
+    assert payload["overall"]["recordings"] == len(recordings)
+    assert payload["overall"]["latency_budget_pass_rate"] is not None
+    assert set(payload["per_language"]) == {"en", "zh"}
 
 
 def test_streaming_resume_skips_cached(dummy_dataset, tmp_path):
