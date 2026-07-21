@@ -53,6 +53,11 @@ class DiartWhisperLiveStreamingAdapter(StreamingAdapter):
         self._diar.feed(self._buf)
         segments = self._client.finish()
         self._client = None
+        if not segments:
+            raise RuntimeError(
+                "WhisperLive returned no segments. Check the server log for a "
+                "CUDA or transcription error; refusing to cache an empty run."
+            )
         return self._emit(segments, total, final=True)
 
     def _emit(self, raw: list[dict], audio_time: float,

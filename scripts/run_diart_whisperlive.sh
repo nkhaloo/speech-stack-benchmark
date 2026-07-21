@@ -28,7 +28,16 @@ fi
 WHISPERLIVE_SITE="$(
   .venv-whisperlive/bin/python -c 'import site; print(site.getsitepackages()[0])'
 )"
-export LD_LIBRARY_PATH="${WHISPERLIVE_SITE}/nvidia/cublas/lib:${WHISPERLIVE_SITE}/nvidia/cudnn/lib:${LD_LIBRARY_PATH:-}"
+WHISPERLIVE_CUDA_LIBS="$(
+  find "${WHISPERLIVE_SITE}/nvidia" -type f -name '*.so*' -printf '%h\n' 2>/dev/null \
+    | sort -u | paste -sd: -
+)"
+export LD_LIBRARY_PATH="${WHISPERLIVE_CUDA_LIBS}:${LD_LIBRARY_PATH:-}"
+
+# Fail before loading diart if CTranslate2's required CUDA library is not
+# actually resolvable in this environment.
+.venv-whisperlive/bin/python -c \
+  "import ctypes; ctypes.CDLL('libcublas.so.12'); print('CUDA 12 runtime ready')"
 
 .venv-whisperlive/bin/python scripts/run_whisperlive_server.py \
   --port "$PORT" --model deepdml/faster-whisper-large-v3-turbo-ct2 &
@@ -42,4 +51,4 @@ sleep 2
 .venv-diart/bin/python scripts/run_streaming_benchmark.py \
   --config configs/streaming_diart_whisperlive.yaml \
   --profile "$PROFILE" --manifest "$MANIFEST" \
-  --tag diart-whisperlive-turbo
+  --tag diart-whisperlive-turbo --force

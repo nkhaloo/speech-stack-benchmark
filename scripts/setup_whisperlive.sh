@@ -15,7 +15,8 @@ PY="${PYTHON:-python3}"
   "faster-whisper==1.2.0" "numpy==1.26.4" "tokenizers==0.20.3" \
   torch torchaudio websockets websocket-client scipy soundfile librosa \
   onnxruntime numba kaldialign fastapi uvicorn python-multipart \
-  "openai-whisper==20250625" nvidia-cublas-cu12 nvidia-cudnn-cu12
+  "openai-whisper==20250625" nvidia-cublas-cu12 nvidia-cudnn-cu12 \
+  nvidia-cuda-runtime-cu12 nvidia-cuda-nvrtc-cu12 nvidia-nvjitlink-cu12
 
 echo
 echo ".venv-whisperlive ready. Run scripts/run_diart_whisperlive.sh <profile>."
