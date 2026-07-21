@@ -231,6 +231,7 @@ def test_diart_card_bounds_online_speaker_clusters():
     card = load_yaml(project_root() / "configs/models/stream_diart_whisper.yaml")
     assert card["diart"]["max_speakers"] == 4
     assert card["diart"]["delta_new"] > 1.0
+    assert card["diart"]["latency"] == 2.0
 
 
 def test_tuning_track_applies_nested_card_overrides():
@@ -240,6 +241,7 @@ def test_tuning_track_applies_nested_card_overrides():
         project_root() / "configs/streaming_diart_whisperlive_tuning.yaml")
     stacks = {s["id"]: s for s in cfg["streaming_stacks"]}
     assert len(stacks) == 7
+    assert stacks["tune-control"]["diart"]["latency"] == 0.5
     assert stacks["tune-control"]["whisperlive"]["finalize_after_sec"] == 5.0
     assert stacks["tune-finalize-2s"]["whisperlive"]["finalize_after_sec"] == 2.0
     assert stacks["tune-finalize-2s"]["whisperlive"]["model"] == "large-v3-turbo"

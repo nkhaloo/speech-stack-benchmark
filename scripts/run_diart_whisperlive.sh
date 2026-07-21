@@ -7,7 +7,7 @@ PROFILE="${1:-baseline}"
 MANIFEST="artifacts/datasets/synthetic_commonvoice_mdc/$PROFILE/manifest.jsonl"
 PORT="${WHISPERLIVE_PORT:-9090}"
 CONFIG="${STREAMING_CONFIG:-configs/streaming_diart_whisperlive.yaml}"
-RUN_TAG="${STREAMING_TAG:-diart-whisperlive-turbo}"
+RUN_TAG="${STREAMING_TAG:-diart-whisperlive-turbo-latency2-v2}"
 FORCE="${STREAMING_FORCE:-1}"
 export SPEECH_BENCHMARK_WHISPERLIVE_PORT="$PORT"
 

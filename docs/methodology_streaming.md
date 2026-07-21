@@ -220,6 +220,10 @@ Diart uses its published AMI hyperparameters (`tau=0.507`, `rho=0.006`,
 `delta=1.057`) and caps online clustering at four speakers. The corpus contains
 at most three speakers, so the cap leaves headroom while preventing runaway
 cluster creation; it does not use each recording's reference speaker count.
+The promoted runtime uses 2 s diart latency: the smoke tuning ladder reduced
+cpWER and fused-timeline DER while cutting speaker-label churn substantially,
+with no material RTF cost. The prior 0.5 s baseline remains preserved under
+its original run id.
 
 **Parameter-tuning smoke ladder** — runs the unchanged control plus six
 predeclared variants on the smoke corpus in one resumable comparison run:

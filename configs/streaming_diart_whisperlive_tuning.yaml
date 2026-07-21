@@ -12,16 +12,22 @@ streaming_stacks:
   - card: configs/models/stream_diart_whisper.yaml
     overrides:
       id: tune-control
+      diart:
+        latency: 0.5
 
   - card: configs/models/stream_diart_whisper.yaml
     overrides:
       id: tune-finalize-2s
+      diart:
+        latency: 0.5
       whisperlive:
         finalize_after_sec: 2.0
 
   - card: configs/models/stream_diart_whisper.yaml
     overrides:
       id: tune-stability-3
+      diart:
+        latency: 0.5
       whisperlive:
         same_output_threshold: 3
 
@@ -41,6 +47,7 @@ streaming_stacks:
     overrides:
       id: tune-delta-095
       diart:
+        latency: 0.5
         delta_new: 0.95
 
   # Hypothesis only: judge it after the single-variable rows, not by itself.

@@ -17,7 +17,7 @@ diart:
   embedding: pyannote/embedding         # gated — accept terms + HF_TOKEN
   duration: 5.0        # diart chunk length (s)
   step: 0.5            # diart hop (s) = its intrinsic latency
-  latency: 0.5         # "min" == step; raise toward `duration` for accuracy
+  latency: 2.0         # tuning winner: lower cpWER/DER and much less speaker churn
   # Published diart AMI parameters: closest pre-registered domain to these
   # short, clean multi-speaker conversations. The dataset has at most three
   # speakers; four leaves headroom without allowing runaway cluster creation.
