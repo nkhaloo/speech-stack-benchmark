@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import numpy as np
 
 from ..schemas import ASRResult, ASRSegment, Emission, Recording, Word
@@ -41,12 +43,26 @@ class DiartWhisperLiveStreamingAdapter(StreamingAdapter):
         self._client.connect(language)
 
     def push(self, audio: np.ndarray, audio_time_end: float) -> list[Emission]:
+        push_started = time.perf_counter()
         chunk = np.asarray(audio, dtype=np.float32)
         self._buf = np.concatenate([self._buf, chunk])
-        self._diar.feed(self._buf)
         self._client.send(chunk)
-        return self._emit(self._client.snapshot(self._response_wait),
-                          audio_time_end, final=False)
+        raw = self._client.snapshot(self._response_wait)
+
+        # Lexical output must not wait for online diarization. Emit the newest
+        # ASR snapshot provisionally, then attach/revise its speaker after diart
+        # catches up. A later provisional snapshot preserves an attached label.
+        out = self._emit(raw, audio_time_end, final=False, lexical_only=True)
+        lexical_offset = time.perf_counter() - push_started
+        for emission in out:
+            emission.processing_offset_sec = lexical_offset
+        self._diar.feed(self._buf)
+        attributed = self._emit(raw, audio_time_end, final=False)
+        attributed_offset = time.perf_counter() - push_started
+        for emission in attributed:
+            emission.processing_offset_sec = attributed_offset
+        out.extend(attributed)
+        return out
 
     def flush(self) -> list[Emission]:
         total = len(self._buf) / self._sr
@@ -61,7 +77,7 @@ class DiartWhisperLiveStreamingAdapter(StreamingAdapter):
         return self._emit(segments, total, final=True)
 
     def _emit(self, raw: list[dict], audio_time: float,
-              final: bool) -> list[Emission]:
+              final: bool, lexical_only: bool = False) -> list[Emission]:
         segments = []
         for s in raw:
             start, end = _number(s.get("start")), _number(s.get("end"))
@@ -75,8 +91,12 @@ class DiartWhisperLiveStreamingAdapter(StreamingAdapter):
                 words=words))
         asr = ASRResult(recording_id="__stream", model_id=self.model_id,
                         text=" ".join(s.text for s in segments), segments=segments)
-        current = absolute_sentences(asr, self._diar.current_turns(), 0.0, self._gap)
-        return self._tracker.update(current, audio_time, final=final)
+        turns = [] if lexical_only else self._diar.current_turns()
+        current = absolute_sentences(asr, turns, 0.0, self._gap)
+        return self._tracker.update(
+            current, audio_time, final=final,
+            preserve_existing_speaker=lexical_only,
+        )
 
 
 def _number(value):

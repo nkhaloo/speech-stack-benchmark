@@ -319,6 +319,7 @@ class Emission:
     wall_time: float = 0.0             # simulated wall-clock time of emission
     is_final: bool = False
     revision: int = 0                  # how many times this sentence_id changed
+    processing_offset_sec: Optional[float] = None  # availability within push()
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -327,7 +328,8 @@ class Emission:
     def from_dict(cls, d: dict) -> "Emission":
         return cls(**{k: d.get(k) for k in (
             "sentence_id", "text", "speaker", "start", "end",
-            "audio_time", "wall_time", "is_final", "revision")})
+            "audio_time", "wall_time", "processing_offset_sec", "is_final",
+            "revision")})
 
 
 @dataclass

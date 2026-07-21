@@ -79,13 +79,16 @@ def reconstruct(sr: StreamingResult, language: str = "en") -> tuple[CombinedResu
 def _latency_metrics(sr: StreamingResult) -> dict:
     if not sr.emissions:
         return {"time_to_first_token_sec": None,
+                "time_to_first_speaker_token_sec": None,
                 "finalization_delay_median_sec": None,
                 "finalization_delay_p90_sec": None}
     ttft = min(e.wall_time for e in sr.emissions)
+    attributed = [e.wall_time for e in sr.emissions if e.speaker is not None]
     delays = [max(0.0, e.wall_time - e.end)
               for e in sr.emissions if e.is_final and e.end is not None]
     return {
         "time_to_first_token_sec": ttft,
+        "time_to_first_speaker_token_sec": min(attributed) if attributed else None,
         "finalization_delay_median_sec": float(np.median(delays)) if delays else None,
         "finalization_delay_p90_sec": float(np.percentile(delays, 90)) if delays else None,
         "finalized_sentences": len(delays),
@@ -98,19 +101,27 @@ def _stability_metrics(sr: StreamingResult) -> dict:
         by_id.setdefault(e.sentence_id, []).append(e)
     n = len(by_id)
     if n == 0:
-        return {"revision_rate": None, "speaker_label_churn": None,
-                "token_flicker": None, "total_emissions": 0, "num_sentences": 0}
-    revised = churned = 0
+        return {"revision_rate": None, "lexical_revision_rate": None,
+                "speaker_revision_rate": None, "speaker_label_churn": None,
+                "token_flicker": None, "total_emissions": 0,
+                "num_sentences": 0}
+    revised = lexical_revised = speaker_revised = churned = 0
     flicker_total = 0
     for hist in by_id.values():
         if max(e.revision for e in hist) > 0:
             revised += 1
+        if len({e.text for e in hist}) > 1:
+            lexical_revised += 1
         speakers = {e.speaker for e in hist if e.speaker is not None}
+        if len({e.speaker for e in hist}) > 1:
+            speaker_revised += 1
         if len(speakers) > 1:
             churned += 1
         flicker_total += max(0, len({e.text for e in hist}) - 1)
     return {
         "revision_rate": revised / n,
+        "lexical_revision_rate": lexical_revised / n,
+        "speaker_revision_rate": speaker_revised / n,
         "speaker_label_churn": churned / n,
         "token_flicker": flicker_total / n,
         "total_emissions": len(sr.emissions),

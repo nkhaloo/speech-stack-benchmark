@@ -28,7 +28,8 @@ class SentenceTracker:
         self._next_id = 0
 
     def update(self, current: list[dict], audio_time_end: float,
-               final: bool = False) -> list[Emission]:
+               final: bool = False,
+               preserve_existing_speaker: bool = False) -> list[Emission]:
         """Diff ``current`` sentences against tracked state; return new/revised
         and newly-finalized emissions. When ``final`` is True, every open
         sentence is finalized (end of stream)."""
@@ -37,16 +38,20 @@ class SentenceTracker:
             if not (cs.get("text") or "").strip():
                 continue
             match = self._match(cs)
+            speaker = cs.get("speaker")
             if match is None:
                 t = {"id": self._next_id, "start": cs["start"], "end": cs["end"],
-                     "text": cs["text"], "speaker": cs.get("speaker"),
+                     "text": cs["text"], "speaker": speaker,
                      "final": False, "revision": 0}
                 self._next_id += 1
                 self._tracked.append(t)
                 out.append(self._emit(t, audio_time_end, is_final=False))
-            elif not match["final"] and (match["text"] != cs["text"]
-                                         or match["speaker"] != cs.get("speaker")):
-                match.update(text=cs["text"], speaker=cs.get("speaker"),
+            else:
+                if preserve_existing_speaker and speaker is None:
+                    speaker = match["speaker"]
+            if match is not None and not match["final"] and \
+                    (match["text"] != cs["text"] or match["speaker"] != speaker):
+                match.update(text=cs["text"], speaker=speaker,
                              end=cs["end"], revision=match["revision"] + 1)
                 out.append(self._emit(match, audio_time_end, is_final=False))
 
