@@ -255,6 +255,84 @@ not modified.
 The `--run-id` re-invocation is the multi-env pattern (§1): each stack contributes
 to one shared run from whatever env it needs; already-completed stacks are skipped.
 
+## 10b. CPU track — the deferred-labeling regime
+
+The CPU (desktop) track runs streaming under a different product assumption
+than the GPU track, and it has its own config (`configs/cpu_streaming.yaml`)
+and its own stack runtime (`native_batchdiar_stack`,
+`streaming/nativestream.py`).
+
+**The product shape.** A desktop recorder shows a running transcript while
+someone is still talking, then attaches speaker labels when the user stops.
+Text is needed live; speaker attribution is not. So the CPU stacks stream the
+ASR and diarize the session **once**, in batch, at end of session.
+
+**The ASR must be natively streaming — this is the track's hard constraint.**
+Unlike §3.1, where a batch model under a windowing wrapper is eligible, the CPU
+track admits only decoders that carry state across chunks. That rule was
+adopted after measurement, not on principle: faster-whisper small under a
+15 s / 2 s sliding window measured **above 2.0 real-time factor** on desktop
+CPU, so the live transcript falls permanently behind the speaker and the
+product shape above is unbuildable. A sliding window re-encodes its entire
+buffer every step; the cost is inherent to the wrapper, not to a poor choice of
+window. Nemotron 3.5 ASR streaming 0.6B — which encodes each frame exactly once
+— measured ~0.10 on the same hardware and audio, a ~20× difference.
+
+The second requirement is **one multilingual checkpoint** covering all five
+languages, rather than a family of per-language models. This keeps the shipped
+product to a single set of weights and one language switch, and it keeps the
+benchmark's cross-language columns meaningful: a per-language family varies
+model quality and language together, so nothing in the table isolates either.
+
+This is a deliberate narrowing of the general streaming contract (§5), not a
+weaker version of it. Two consequences follow, and both are recorded in every
+row so the arms are never conflated:
+
+* **Label latency is end-of-session**, not sub-second. Rows carry
+  `labels_finalized: end_of_session` and `causal: false` — the diarization pass
+  is not causal even though the text path is. Attribution *latency* on these
+  arms is not comparable to a stack that labels live; accuracy and stability
+  are.
+* **`streaming_rtf` covers the live path only.** The runner times `push`/`flush`,
+  so the one-off diarization pass is excluded. That is the right number for
+  "does text keep up with speech" (compare against 1.0); total cost is
+  `streaming_rtf * duration + batch_diarization_sec`, both recorded per row.
+
+**Why defer the labels.** Speaker attribution is the one thing this design
+gives up, and it buys two things for it. Diarizing once per session rather than
+once per step keeps the diarizer's cost off the live path entirely — which is
+what makes the expensive-but-better diarizer (pyannote on CPU) affordable at
+all. And labels drawn from one global pass are consistent by construction, so
+`speaker_label_churn` should be ~0 (a nonzero value indicates a bug, not a good
+model). An incremental diarizer re-clusters with no global speaker identity, so
+`SPEAKER_00` need not mean the same person twice.
+
+**Where the cost now sits.** With a native streaming decoder the ASR is no
+longer the bottleneck: on the smoke set the live path ran at ~0.10 RTF while
+the single diarization pass took ~35 s per 3-minute recording — roughly twice
+the ASR's total compute for that recording. This is the reverse of the windowed
+regime, and it means the CPU track's remaining headroom is in diarization, not
+transcription. Read `batch_diarization_sec` alongside `streaming_rtf`; neither
+alone describes the stack.
+
+**Arms.** `cpu-stream-nemotron35-560ms-sherpa` is the primary candidate and the
+only fully torch-free arm. `cpu-stream-nemotron35-160ms-sherpa` is the same
+weights at a tighter chunk, so the gap between them is precisely the accuracy
+price of lower latency with nothing else varying.
+`cpu-stream-nemotron35-560ms-pyannote31` (gated) swaps only the diarizer, so
+its delta is diarizer quality — bought at the cost of a ~2 GB torch dependency
+the primary arm avoids.
+
+**Retired.** The windowed faster-whisper arms (`cpu-stream-fw-*`) and their
+live-labeling control are gone, along with the `batchdiar_stack` regime for
+this track; `streaming/batchdiar.py` remains for the GPU-track windowed arms.
+whisper.cpp (`wcpp-small-q5`, `wcpp-large-v3-turbo-q5`), pre-registered in
+`model_shortlist.md` as the CPU rungs, is **ineligible in the streaming regime**
+— it has no streaming decoder, so running it live means the windowed approach
+this track abandoned. Those rungs stay measured in the batch track
+(`configs/cpu.yaml`) only, and the CPU ladder now has two disjoint halves: a
+batch ladder built on Whisper and a streaming ladder built on Nemotron 3.5.
+
 ## 11. What this benchmark deliberately does not do
 
 Production streaming server, packaging/deployment, noisy/overlap/accent stress

@@ -1,0 +1,64 @@
+# CPU track, STREAMING regime — deferred-labeling desktop stacks.
+#
+# The product shape this track evaluates: a desktop recorder that shows a
+# running transcript while someone is still talking, then attaches speaker
+# labels when the user stops. Text is needed live; speaker attribution is not.
+# So the CPU stacks stream the ASR natively and diarize the session ONCE, in
+# batch, at end of session. See streaming/nativestream.py.
+#
+# ASR IS NATIVELY STREAMING HERE — that is the defining constraint of this
+# track, and it is a single multilingual checkpoint (NVIDIA Nemotron 3.5 ASR
+# streaming 0.6B, OpenMDW-1.1), not one model per language. The earlier
+# windowed faster-whisper arms are gone: re-transcribing a 15 s buffer every 2 s
+# measured above 2.0 real-time factor on desktop CPU, meaning the live path
+# falls permanently behind the speaker. Nemotron 3.5 measured ~0.10 across all
+# five languages. Windowing was never the design; it was a workaround for ASR
+# models that cannot stream.
+#
+# Reading the numbers:
+#   * cpu-stream-nemotron35-560ms-sherpa is the PRIMARY candidate — the design
+#     we expect to ship, and the only fully torch-free arm.
+#   * The 160 ms arm is the same weights at a tighter chunk. Its gap to the
+#     560 ms arm is the accuracy price of lower latency, with nothing else
+#     varying. Do not read it as a different model.
+#   * The pyannote arm swaps only the diarizer, so its delta is diarizer
+#     quality, bought at the cost of a ~2 GB torch dependency.
+#   * Every arm defers speaker labels to end of session. Label latency is
+#     end-of-session by design, not sub-second. Rows carry
+#     labels_finalized: end_of_session and causal: false (the diarization pass
+#     is not causal; the text path is). Compare these arms on accuracy and
+#     churn, never on attribution latency.
+#   * streaming_rtf covers the LIVE path only; the one-off diarization pass is
+#     excluded. That is the right number for "does text keep up with speech"
+#     (check it against 1.0). Total cost = streaming_rtf * duration +
+#     batch_diarization_sec, both recorded per row. With a native streaming
+#     decoder the diarization pass is now the dominant cost — the reverse of
+#     the windowed regime.
+#   * speaker_label_churn should be ~0 on every arm by construction. A nonzero
+#     value means something is wrong, not that a model is good.
+#   * MacBook numbers do NOT predict Linux GPU numbers, and CPU results are
+#     never merged into the GPU leaderboard.
+#
+# RETIRED: the whisper.cpp CPU rungs pre-registered in model_shortlist.md
+# (wcpp-small-q5, wcpp-large-v3-turbo-q5) do not appear here and cannot — they
+# are batch models with no streaming decoder, and shelling out to a binary per
+# window is the windowed regime this track abandoned. Those rungs remain
+# measured only in the batch track, configs/cpu.yaml.
+#
+# The batch CPU baseline these are measured against lives in configs/cpu.yaml.
+track: cpu_streaming
+languages: [en, es, fr, ar, zh]
+
+# The streaming contract (pre-registered regime, recorded in every row).
+streaming:
+  frame_sec: 0.5            # audio delivered to each stack this fine-grained
+  latency_budget_sec: 2.0   # target: sentence finalized within this of turn end
+
+streaming_stacks:
+  - configs/models/stream_cpu_nemotron35_560ms_sherpa.yaml      # PRIMARY candidate
+  - configs/models/stream_cpu_nemotron35_160ms_sherpa.yaml      # latency rung
+  - configs/models/stream_cpu_nemotron35_560ms_pyannote31.yaml  # diarizer swap (gated)
+
+metrics:
+  der_collar: 0.5
+  der_skip_overlap: false

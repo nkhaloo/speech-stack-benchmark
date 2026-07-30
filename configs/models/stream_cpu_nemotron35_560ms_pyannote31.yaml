@@ -1,0 +1,36 @@
+# CPU DIARIZER SWAP — same deferred-labeling design and the same live Nemotron
+# 3.5 (560 ms) ASR path as the primary arm, but end-of-session labels come from
+# pyannote 3.1 on CPU instead of sherpa-onnx. Isolates diarizer quality with the
+# ASR side held fixed.
+#
+# pyannote on CPU is the quality reference that model_shortlist.md flags as
+# "how slow the good one is without a GPU". Deferred labeling is what makes it
+# affordable: it runs once per session rather than once per window, so its cost
+# lands in batch_diarization_sec and never touches the live path's RTF. If the
+# DER win is real, this is the arm that shows deferring labels bought something
+# beyond stability.
+#
+# Note this arm gives up the primary's torch-free packaging story: pyannote
+# pulls a ~2 GB torch CPU build into a desktop app. Weigh the DER win against
+# that, not just against runtime.
+#
+# GATED: needs HF_TOKEN plus one-time acceptance of the pyannote terms on
+# speaker-diarization-3.1, segmentation-3.0 and wespeaker-voxceleb-resnet34-LM.
+# Left enabled; the runner marks it skipped (not failed) if the weights are
+# absent, so the run still completes without it.
+id: cpu-stream-nemotron35-560ms-pyannote31
+family: nativestream
+runtime: native_batchdiar_stack
+native: true
+asr: configs/models/asr_nemotron35_stream_560ms_cpu.yaml
+diarization: configs/models/diar_pyannote_31_cpu.yaml
+sentence_gap_sec: 0.8
+window:
+  emit_every_sec: 1.0
+  finalize_after_sec: 2.0
+  match_tolerance_sec: 1.0
+license: Apache-2.0
+weights_license: "OpenMDW-1.1 (Nemotron) + MIT (pyannote)"
+gated: true
+offline_after_download: true
+deployment_notes: "Diarizer-swap arm; gated weights, torch CPU required."

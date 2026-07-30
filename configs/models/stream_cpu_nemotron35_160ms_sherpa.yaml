@@ -1,0 +1,27 @@
+# CPU LOW-LATENCY RUNG — identical to stream_cpu_nemotron35_560ms_sherpa.yaml
+# in every respect except the ASR export's chunk size (160 ms vs 560 ms).
+#
+# Same weights, same languages, same diarizer, same emission cadence. The only
+# thing that varies is how much lookahead the encoder is allowed, so the gap
+# between this arm and the 560 ms arm is precisely the accuracy cost of tighter
+# latency — the CPU track's streaming-latency ladder.
+#
+# Expect finalization delay down and real-time factor up: a smaller chunk means
+# more encoder invocations per second of audio. Check streaming_rtf against 1.0
+# before reading the latency win as free.
+id: cpu-stream-nemotron35-160ms-sherpa
+family: nativestream
+runtime: native_batchdiar_stack
+native: true
+asr: configs/models/asr_nemotron35_stream_160ms_cpu.yaml
+diarization: configs/models/diar_sherpa_onnx.yaml
+sentence_gap_sec: 0.8
+window:
+  emit_every_sec: 1.0
+  finalize_after_sec: 2.0
+  match_tolerance_sec: 1.0
+license: Apache-2.0
+weights_license: "OpenMDW-1.1 (Nemotron) + MIT/Apache-2.0 (sherpa-onnx diarization bundle)"
+gated: false
+offline_after_download: true
+deployment_notes: "Latency rung; same weights as the 560 ms primary."

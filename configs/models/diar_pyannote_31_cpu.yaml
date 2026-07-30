@@ -14,3 +14,9 @@ deployment_notes: "Needs torch CPU (~2 GB install); RTF well above sherpa-onnx."
 download:
   kind: hf_snapshot
   repo: pyannote/speaker-diarization-3.1
+  # The 3.1 pipeline repo holds only the recipe; the checkpoints it loads live
+  # in these two gated repos. Without them the download "succeeds" and then
+  # inference fails offline. Accept the terms on all three.
+  extra_repos:
+    - pyannote/segmentation-3.0
+    - pyannote/wespeaker-voxceleb-resnet34-LM

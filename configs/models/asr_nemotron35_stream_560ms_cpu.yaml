@@ -1,0 +1,37 @@
+# CPU STREAMING ASR — NVIDIA Nemotron 3.5 ASR streaming 0.6B, 560 ms chunk.
+#
+# One multilingual checkpoint covering all five benchmark languages, selected
+# per stream (no per-language model files). Cache-aware FastConformer-RNNT:
+# every audio frame is encoded exactly once, so cost is linear in session
+# length rather than quadratic like a re-transcribed sliding window.
+#
+# Measured on this project's smoke set, macOS arm64, int8, 4 threads:
+# ~0.10 real-time factor across en/es/fr/ar/zh. Punctuation and capitalization
+# are produced natively, which is what keeps the punctuation-based sentence
+# splitting in fusion/assign.py alive.
+#
+# 560 ms is the balanced rung. asr_nemotron35_stream_160ms_cpu.yaml is the
+# low-latency rung on the same weights — the pair isolates what tightening the
+# chunk costs in accuracy.
+#
+# LICENSE: OpenMDW-1.1 (Linux Foundation) — permissive, commercial use
+# explicit, no copyleft, no field-of-use restriction. See docs/licensing.md.
+id: nemotron35-stream-560ms-cpu
+family: nemotron
+runtime: sherpa_streaming
+model: artifacts/models/sherpa-onnx/sherpa-onnx-nemotron-3.5-asr-streaming-0.6b-560ms-int8-2026-06-11
+chunk_ms: 560
+use_int8: true
+num_threads: 4
+feature_dim: 80
+decoding_method: greedy_search
+languages: [en, es, fr, ar, zh]
+license: Apache-2.0            # sherpa-onnx runtime
+weights_license: OpenMDW-1.1
+gated: false
+offline_after_download: true
+disk_size_gb: 0.7
+download:
+  kind: sherpa_bundle
+  archive_url: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemotron-3.5-asr-streaming-0.6b-560ms-int8-2026-06-11.tar.bz2
+  dest: artifacts/models/sherpa-onnx

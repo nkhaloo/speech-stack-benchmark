@@ -15,6 +15,8 @@ Legend: ✔ yes ✘ no ⚠ conditional.
 | faster-whisper + CTranslate2 | MIT | (uses Whisper weights) | ✔ | ✔ | ✘ | none | ✔ |
 | whisper.cpp + ggml conversions | MIT | MIT (converted Whisper) | ✔ | ✔ | ✘ | none | ✔ |
 | Voxtral Mini 3B (2507) / Mini 4B Realtime (2602) | vLLM: Apache-2.0 | Apache-2.0 | ✔ | ✔ | ✘ | none | ✔ |
+| **NVIDIA Nemotron 3.5 ASR streaming 0.6B** (CPU streaming track) | sherpa-onnx: Apache-2.0 | **OpenMDW-1.1** | ✔ | ✔ | ✘ | none — permissive, no copyleft, no field-of-use limit; model *outputs* explicitly unrestricted | ✔ |
+| Vosk (Kaldi) small models — en/es/fr/zh, ar-mgb2 | Apache-2.0 | Apache-2.0 | ✔ | ✔ | ✘ | ⚠ `vosk-model-ar-0.22-linto` is **AGPL** — use `ar-mgb2-0.4` instead | ✔ |
 | Meta MMS / SeamlessM4T | — | CC-BY-**NC**-4.0 | ✘ | ⚠ | ✔ | — | — |
 | NVIDIA Canary-1b (original) | Apache-2.0 (NeMo) | CC-BY-**NC**-4.0 | ✘ | ⚠ | ✔ | — | — |
 

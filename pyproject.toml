@@ -35,9 +35,20 @@ dev = [
     "matplotlib>=3.7",
 ]
 # CPU-track model runtimes (desktop-class: macOS / Windows / CPU-only Linux).
+# sherpa-onnx >=1.13.4 is required by the CPU *streaming* track, not just
+# preferred: multilingual Nemotron 3.5 needs the `prompt_index` encoder input
+# that landed in that release. Older builds load the model and then transcribe
+# every language as English.
 cpu = [
     "faster-whisper>=1.1",
-    "sherpa-onnx>=1.10",
+    "sherpa-onnx>=1.13.4",
+]
+# Vosk streaming ASR — registered in streaming/online_asr.py but referenced by
+# no track config (see model_shortlist.md for why it lost to Nemotron 3.5).
+# Pinned on macOS: 0.3.45 ships no macOS wheel.
+cpu-vosk = [
+    "vosk==0.3.44; sys_platform == 'darwin'",
+    "vosk>=0.3.44; sys_platform != 'darwin'",
 ]
 # CPU diarization with pyannote (slow but works; pulls torch CPU build on mac/win).
 # Same torch/torchaudio caps as the gpu extra (see that comment for why).

@@ -12,6 +12,10 @@ from .base import AdapterUnavailable, StreamingAdapter
 _REGISTRY = {
     "dummy_stream": "speech_benchmark.streaming.dummy.DummyStreamingAdapter",
     "windowed_stack": "speech_benchmark.streaming.windowed.WindowedStackStreamingAdapter",
+    "batchdiar_stack": "speech_benchmark.streaming.batchdiar.BatchDiarStreamingAdapter",
+    "native_batchdiar_stack": (
+        "speech_benchmark.streaming.nativestream.NativeStreamBatchDiarAdapter"
+    ),
     "diart_whisper": "speech_benchmark.streaming.diart_adapter.DiartWhisperStreamingAdapter",
     "diart_whisperlive": (
         "speech_benchmark.streaming.diart_whisperlive."

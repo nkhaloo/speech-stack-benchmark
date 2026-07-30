@@ -64,13 +64,39 @@ def download_hf_snapshot(repo: str, extra_repos: list[str] | None = None) -> Non
                       file=sys.stderr)
 
 
-def download_sherpa_bundle(segmentation_url: str, embedding_url: str, dest: str) -> None:
-    dest_dir = resolve_path(dest, ROOT)
+def sherpa_bundle_urls(dl: dict) -> list[str]:
+    """Every URL a ``sherpa_bundle`` card pulls, in order.
+
+    Cards name their URLs by role (``segmentation_url``/``embedding_url`` for
+    the diarization bundle, ``archive_url`` for a single ASR model archive) or
+    list them under ``urls:``. Collecting them in one place keeps the downloader
+    and the ``check_track_env.py`` presence check reading the same spec."""
+    urls = [u for u in (dl.get("urls") or [])]
+    for key in ("archive_url", "segmentation_url", "embedding_url"):
+        if dl.get(key):
+            urls.append(dl[key])
+    return urls
+
+
+def sherpa_bundle_targets(dl: dict) -> list[Path]:
+    """Where each URL lands once fetched (and extracted, for tarballs)."""
+    dest_dir = resolve_path(dl["dest"], ROOT)
+    out = []
+    for url in sherpa_bundle_urls(dl):
+        name = url.rsplit("/", 1)[-1]
+        out.append(dest_dir / (name[: -len(".tar.bz2")]
+                               if name.endswith(".tar.bz2") else name))
+    return out
+
+
+def download_sherpa_bundle(dl: dict) -> None:
+    dest_dir = resolve_path(dl["dest"], ROOT)
     dest_dir.mkdir(parents=True, exist_ok=True)
-    for url in (segmentation_url, embedding_url):
+    for url in sherpa_bundle_urls(dl):
         name = url.rsplit("/", 1)[-1]
         target = dest_dir / name
-        if target.exists() or (dest_dir / name.replace(".tar.bz2", "")).exists():
+        extracted = dest_dir / name.replace(".tar.bz2", "")
+        if target.exists() or extracted.exists():
             print(f"  exists: {name}")
         else:
             print(f"  fetching {url}")
@@ -82,19 +108,54 @@ def download_sherpa_bundle(segmentation_url: str, embedding_url: str, dest: str)
             target.unlink()
 
 
+def _as_card(entry) -> dict:
+    return load_yaml(resolve_path(entry, ROOT)) if isinstance(entry, str) else dict(entry)
+
+
+def collect_cards(track_cfg: dict) -> list[dict]:
+    """Every model card a track needs weights for, deduped by id.
+
+    Batch tracks list them flat under ``asr_models``/``diarization_models``.
+    Streaming tracks list *stacks* under ``streaming_stacks``, and a stack is a
+    composite: the weights it needs live in the ``asr:`` and ``diarization:``
+    cards it references (by path or inline). Those nested cards are what carry
+    the ``download:`` spec, so they have to be walked or a streaming track
+    downloads nothing at all."""
+    cards: dict[str, dict] = {}
+
+    def add(entry) -> None:
+        mc = _as_card(entry)
+        mid = mc.get("id")
+        if mid and mid not in cards:
+            cards[mid] = mc
+        for key in ("asr", "diarization"):   # composite streaming stacks
+            if key in mc:
+                add(mc[key])
+
+    for entry in (track_cfg.get("asr_models", [])
+                  + track_cfg.get("diarization_models", [])
+                  + track_cfg.get("streaming_stacks", [])):
+        add(entry)
+    return list(cards.values())
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--track", required=True, choices=["cpu", "gpu", "smoke"])
+    ap.add_argument("--track", required=True,
+                    help="track config basename in configs/ "
+                         "(cpu, gpu, smoke, cpu_streaming, streaming, ...)")
     ap.add_argument("--models", nargs="*", default=None,
                     help="limit to these model ids")
     ap.add_argument("--include-disabled", action="store_true")
     args = ap.parse_args()
 
-    track_cfg = load_yaml(ROOT / "configs" / f"{args.track}.yaml")
-    entries = track_cfg.get("asr_models", []) + track_cfg.get("diarization_models", [])
+    cfg_path = ROOT / "configs" / f"{args.track}.yaml"
+    if not cfg_path.exists():
+        sys.exit(f"No such track config: {cfg_path}")
+    track_cfg = load_yaml(cfg_path)
+    entries = collect_cards(track_cfg)
     failures = 0
-    for entry in entries:
-        mc = load_yaml(resolve_path(entry, ROOT)) if isinstance(entry, str) else entry
+    for mc in entries:
         if not mc.get("enabled", True) and not args.include_disabled:
             print(f"skip (disabled): {mc.get('id')}")
             continue
@@ -114,8 +175,7 @@ def main() -> None:
             elif kind == "hf_snapshot":
                 download_hf_snapshot(dl["repo"], dl.get("extra_repos"))
             elif kind == "sherpa_bundle":
-                download_sherpa_bundle(dl["segmentation_url"],
-                                       dl["embedding_url"], dl["dest"])
+                download_sherpa_bundle(dl)
             else:
                 print(f"  unknown download kind: {kind}", file=sys.stderr)
         except Exception as e:

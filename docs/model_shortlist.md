@@ -46,6 +46,25 @@ Notes:
 | `fw-small-int8-cpu` | faster-whisper small, int8 | Same runtime as GPU track ⇒ simpler product code-path; solid CPU speed | ~1.5 GB |
 | `fw-medium-int8-cpu` | faster-whisper medium, int8 | Desktop quality/speed middle ground | ~2.5 GB |
 
+## CPU streaming ASR (desktop track, streaming regime)
+
+Disjoint from the table above: nothing there can stream. Eligibility here means
+a decoder that carries state across chunks, plus one multilingual checkpoint
+covering all five languages.
+
+| id | Model / runtime | Why it's in | RAM (est.) |
+|---|---|---|---|
+| `nemotron35-stream-560ms-cpu` | NVIDIA Nemotron 3.5 ASR streaming 0.6B (int8) via sherpa-onnx | Cache-aware FastConformer-RNNT; one multilingual checkpoint for all 5 languages; ~0.10 RTF on desktop CPU; punctuation + capitalization native; torch-free; OpenMDW-1.1 | ~1 GB |
+| `nemotron35-stream-160ms-cpu` | Same weights, 160 ms chunk export | Low-latency rung — isolates the accuracy cost of tighter lookahead | ~1 GB |
+
+Considered and rejected: **Vosk** (Apache-2.0, genuinely streaming, ~0.02 RTF,
+covers all 5 languages — but as five per-language models, not one multilingual
+checkpoint, and it emits lowercase unpunctuated text which leaves the
+punctuation-based sentence splitting in `fusion/assign.py` dead). The adapter
+is kept at `streaming/vosk_asr.py` and registered, referenced by no track.
+**sherpa-onnx streaming zipformers** (Apache-2.0, fast) have no Spanish or
+Arabic weights.
+
 ## GPU diarization
 
 | id | System | Why it's in | Flag |
@@ -88,3 +107,20 @@ Notes:
 
 The benchmark exists to confirm or overturn these hypotheses — see
 `results.md` after the Linux run.
+
+> **The CPU rungs above are for BATCH use only.** Both name whisper.cpp and
+> both were chosen under batch assumptions. Neither is eligible in the
+> streaming regime at all: whisper.cpp has no streaming decoder, so running it
+> live means re-transcribing a buffer window every step. That regime was
+> measured and abandoned — faster-whisper small under a 15 s / 2 s sliding
+> window exceeded **2.0 real-time factor** on desktop CPU, meaning the live
+> transcript falls permanently behind the speaker. See `methodology_streaming.md`
+> §10b.
+>
+> **CPU streaming rung (separate ladder).** `nemotron35-stream-560ms-cpu` +
+> `sherpa-diar-cpu` — NVIDIA Nemotron 3.5 ASR streaming 0.6B, a cache-aware
+> FastConformer-RNNT that encodes each frame exactly once. One multilingual
+> checkpoint covers all five languages (no per-language weights), it is
+> torch-free through sherpa-onnx, and it measured **~0.10 real-time factor**
+> across en/es/fr/ar/zh. Weights are OpenMDW-1.1: permissive, commercial use
+> explicit, no copyleft, no field-of-use restriction.

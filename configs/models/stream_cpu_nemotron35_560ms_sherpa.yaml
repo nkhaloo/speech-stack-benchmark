@@ -1,0 +1,39 @@
+# CPU PRIMARY CANDIDATE — the deferred-labeling desktop stack: natively
+# streaming ASR (Nemotron 3.5, 560 ms chunk) with speaker labels attached from a
+# single whole-file diarization pass (sherpa-onnx) at end of session.
+#
+# sherpa-onnx is the diarizer because it is torch-free and Apache-2.0 — the
+# best packaging story for a shipped desktop app (see model_shortlist.md) — and
+# it is now the same runtime that drives the ASR, so the whole stack is one
+# onnxruntime dependency with no torch anywhere.
+#
+# Native streaming, not windowed: the encoder sees each audio frame exactly
+# once and carries its own cache forward. The windowed faster-whisper arms this
+# replaces re-transcribed a 15 s buffer every 2 s and measured above 2.0
+# real-time factor on desktop CPU — the live path fell permanently behind the
+# speaker. This measured ~0.10.
+#
+# Speaker labels are still deferred to end of session, and that is deliberate:
+# diarizing once per session rather than once per step is what keeps the
+# diarizer's cost off the live path AND makes labels globally consistent, so
+# speaker_label_churn should be ~0 by construction. The trade-off is that labels
+# are not available mid-session. See streaming/nativestream.py.
+id: cpu-stream-nemotron35-560ms-sherpa
+family: nativestream
+runtime: native_batchdiar_stack
+native: true
+asr: configs/models/asr_nemotron35_stream_560ms_cpu.yaml
+diarization: configs/models/diar_sherpa_onnx.yaml
+sentence_gap_sec: 0.8
+window:
+  # No buffer window — audio is decoded once. These govern emission cadence and
+  # revisability only.
+  emit_every_sec: 1.0       # re-derive sentences from the hypothesis this often
+  finalize_after_sec: 2.0   # matches the track's latency_budget_sec: a sentence
+                            # stops being revisable once it is past the budget
+  match_tolerance_sec: 1.0
+license: Apache-2.0
+weights_license: "OpenMDW-1.1 (Nemotron) + MIT/Apache-2.0 (sherpa-onnx diarization bundle)"
+gated: false
+offline_after_download: true
+deployment_notes: "CPU baseline: native streaming ASR + one-shot batch diarization; torch-free."

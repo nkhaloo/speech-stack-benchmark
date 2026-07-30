@@ -29,6 +29,7 @@ from ..schemas import (Recording, StreamingResult, atomic_write_json,
 from . import create_streaming_adapter
 from .base import AdapterUnavailable
 from .metrics import streaming_metrics
+from .online_asr import UnsupportedLanguage
 
 SAMPLE_RATE = 16000
 
@@ -159,6 +160,17 @@ class StreamingRunner:
                 runtime_sec=compute_total, load_time_sec=load_time,
                 resources=mon.stats, model_meta=adapter.model_meta(),
                 streaming_meta=meta, status="completed")
+        except UnsupportedLanguage as e:
+            # Expected, not a failure: a streaming ASR may have weights for only
+            # some of the benchmark's languages (the zipformer arm covers
+            # en/fr/zh but not es/ar). Recording it as `skipped` keeps it out of
+            # the error log and stops the leaderboard reading a missing language
+            # as a bad score.
+            return StreamingResult(
+                recording_id=rec.recording_id, model_id=scfg["id"],
+                audio_duration_sec=rec.duration_sec, load_time_sec=load_time,
+                streaming_meta=meta, status="skipped",
+                error=f"unsupported language: {e}")
         except Exception as e:
             self.ctx.record_error("streaming", scfg["id"], rec.recording_id, e)
             return StreamingResult(
@@ -196,6 +208,18 @@ class StreamingRunner:
                     rows.append(dict(row, status="missing"))
                     continue
                 sr = StreamingResult.from_dict(load_json(path))
+                # The per-stack streaming contract belongs in every row: stacks
+                # in one run may differ in windowing and — since batchdiar_stack
+                # — in whether they are causal at all.
+                smeta = sr.streaming_meta or {}
+                for k in ("policy", "emit_every_sec", "window_sec",
+                          "finalize_after_sec", "asr_mode", "diarization_mode",
+                          "labels_finalized", "causal"):
+                    if k in smeta:
+                        row[k] = smeta[k]
+                mmeta = sr.model_meta or {}
+                if "batch_diarization_sec" in mmeta:
+                    row["batch_diarization_sec"] = mmeta["batch_diarization_sec"]
                 row.update(status=sr.status, error=sr.error,
                            runtime_sec=sr.runtime_sec,
                            streaming_rtf=sr.real_time_factor,

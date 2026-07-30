@@ -1,0 +1,32 @@
+# CPU STREAMING ASR — Nemotron 3.5 ASR streaming 0.6B, 160 ms chunk.
+#
+# Identical weights to asr_nemotron35_stream_560ms_cpu.yaml, exported at a
+# tighter chunk. The pair is the streaming-latency ladder for the CPU track:
+# same model, same languages, same diarizer — only the encoder's lookahead
+# changes, so the accuracy difference between them IS the price of lower
+# latency, with nothing else varying.
+#
+# Expect finalization delay to fall and real-time factor to rise: a smaller
+# chunk means more encoder invocations per second of audio. Check
+# streaming_rtf against 1.0 before reading the latency win as free.
+#
+# LICENSE: OpenMDW-1.1 — see the 560 ms card.
+id: nemotron35-stream-160ms-cpu
+family: nemotron
+runtime: sherpa_streaming
+model: artifacts/models/sherpa-onnx/sherpa-onnx-nemotron-3.5-asr-streaming-0.6b-160ms-int8-2026-06-11
+chunk_ms: 160
+use_int8: true
+num_threads: 4
+feature_dim: 80
+decoding_method: greedy_search
+languages: [en, es, fr, ar, zh]
+license: Apache-2.0            # sherpa-onnx runtime
+weights_license: OpenMDW-1.1
+gated: false
+offline_after_download: true
+disk_size_gb: 0.7
+download:
+  kind: sherpa_bundle
+  archive_url: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemotron-3.5-asr-streaming-0.6b-160ms-int8-2026-06-11.tar.bz2
+  dest: artifacts/models/sherpa-onnx
