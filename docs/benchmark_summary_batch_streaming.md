@@ -8,8 +8,8 @@ Common-Voice-derived baseline corpus, but they are separate benchmark tracks and
 must not be merged into one leaderboard.
 
 - **Recommended batch deployment stack:** faster-whisper `large-v3-turbo` plus
-  `pyannote/speaker-diarization-3.1`. It achieved macro WER 0.1584 and macro
-  cpWER 0.3487 at an end-to-end RTF of 0.021.
+  `pyannote/speaker-diarization-3.1`. It achieved macro WER 0.1460 and macro
+  cpWER 0.3117 at an end-to-end RTF of 0.020, with macro DER 0.1563.
 - **Best native streaming stack tested:** WhisperLive/faster-whisper
   `large-v3-turbo` plus diart using `pyannote/segmentation-3.0` and
   `pyannote/embedding`. It achieved macro WER 0.239, macro cpWER 0.525, and
@@ -55,9 +55,15 @@ silence. The preparation pipeline therefore uses a clip-relative RMS gate:
 - internal pauses long enough to separate voiced regions are left unlabelled;
 - voiced regions shorter than 100 ms are discarded.
 
-The original edge-only correction reduced batch pyannote DER from 0.3722 to
-0.2459, primarily by reducing incorrectly measured missed speech from 0.3031 to
-0.1514. This is a reference-ground-truth correction, not speech enhancement.
+The correction ran in two stages. The original edge-only trim reduced batch
+pyannote DER from 0.3722 to 0.2459, cutting incorrectly measured missed speech from
+0.3031 to 0.1514. Splitting each clip into voiced spans then reduced DER further to
+**0.1563**, with missed speech at **0.0660**. This is a reference-ground-truth
+correction, not speech enhancement: the diarizer output never changed.
+
+The batch figures in this document are the voiced-span (final) numbers. Earlier
+drafts of this report and `docs/results.md`, including the PDF circulated on
+2026-07-21, quoted the intermediate edge-only numbers; those are superseded.
 
 ### Dataset limitations
 
@@ -81,9 +87,9 @@ collar (±0.25 seconds), with overlap scored.
 
 | ASR model | Macro WER ↓ | Worst-language WER ↓ | WER std | RTF ↓ | Peak VRAM |
 |:--|--:|--:|--:|--:|--:|
-| `large-v3` | **0.1527** | 0.2225 | 0.0663 | 0.040 | 6022.7 MB |
-| `large-v3-turbo` | 0.1584 | **0.1891** | **0.0484** | **0.015** | 3438.3 MB |
-| `medium` | 0.1883 | 0.3417 | 0.1068 | 0.019 | 3424.1 MB |
+| `large-v3-turbo` | **0.1460** | **0.1963** | **0.0567** | **0.014** | 3439.8 MB |
+| `large-v3` | 0.1552 | 0.2199 | 0.0673 | 0.038 | 6050.3 MB |
+| `medium` | 0.1989 | 0.3443 | 0.0997 | 0.019 | 3408.5 MB |
 
 All three models achieved 100% language-detection accuracy on this corpus.
 
@@ -93,23 +99,38 @@ The batch track used `pyannote/speaker-diarization-3.1`.
 
 | Metric | Macro result |
 |:--|--:|
-| DER ↓ | 0.2459 |
-| Missed speech ↓ | 0.1514 |
+| DER ↓ | 0.1563 |
+| Missed speech ↓ | 0.0660 |
 | False alarm ↓ | 0.0006 |
-| Speaker confusion ↓ | 0.0939 |
-| Mean speaker-count error | -0.0222 |
+| Speaker confusion ↓ | 0.0897 |
+| Mean speaker-count error | +0.1333 |
+| Worst-language DER ↓ | 0.3131 (French) |
+
+With the reference artifact removed, **speaker confusion (0.0897) now exceeds missed
+speech (0.0660)** and false alarm is negligible. The remaining diarization error is
+therefore dominated by telling speakers apart, not by detecting speech — voice
+activity detection and audio cleanup have little headroom left on this corpus.
+
+Speaker-count error also flipped positive (+0.1333): the additional turn boundaries
+created by voiced segmentation sometimes lead pyannote to over-split a single
+speaker into two. Because an over-split speaker also generates confusion time, part
+of the 0.0897 is likely the same defect. Supplying a speaker count or a
+`min_speakers`/`max_speakers` bracket is the obvious next experiment — no model card
+currently sets one, so every figure here was produced with no speaker hint.
 
 ### Combined batch stacks
 
 | ASR + `pyannote-3.1` | Macro cpWER ↓ | Worst cpWER ↓ | Word attribution ↑ | Sentence attribution ↑ | RTF ↓ | Peak VRAM |
 |:--|--:|--:|--:|--:|--:|--:|
-| `large-v3` | **0.3465** | 0.6624 | 0.8895 | 0.8529 | 0.046 | 6022.7 MB |
-| `large-v3-turbo` | 0.3487 | **0.6546** | **0.8902** | 0.8517 | **0.021** | 3438.3 MB |
-| `medium` | 0.3676 | 0.6605 | 0.8883 | **0.8599** | 0.026 | 3424.2 MB |
+| `large-v3-turbo` | **0.3117** | 0.7055 | 0.9058 | 0.8580 | **0.020** | 3439.8 MB |
+| `large-v3` | 0.3213 | **0.6886** | **0.9086** | **0.8670** | 0.045 | 6050.3 MB |
+| `medium` | 0.3507 | 0.6959 | 0.9037 | 0.8641 | 0.025 | 3408.5 MB |
 
-`large-v3-turbo` is recommended because its 0.0022 absolute cpWER difference
-from `large-v3` is negligible, while it is about twice as fast, uses roughly 40%
-less VRAM, and has better worst-language consistency.
+`large-v3-turbo` is recommended because it wins outright on both macro cpWER (0.3117)
+and macro WER (0.1460) while running about twice as fast and using roughly 40% less
+VRAM. `large-v3` takes only the narrow tie-breakers — worst-language cpWER (0.6886 vs
+0.7055), cross-language consistency, and attribution accuracy — which do not offset
+its cost.
 
 ### Best batch result observed per language
 
@@ -118,11 +139,16 @@ is not necessarily the same in every row.
 
 | Language | WER ↓ | DER (`pyannote-3.1`) ↓ | cpWER ↓ | Winning ASR for cpWER |
 |:--|--:|--:|--:|:--|
-| Arabic | 0.1659 | 0.1983 | 0.4543 | `large-v3-turbo` |
-| English | 0.0535 | 0.2021 | 0.1689 | `large-v3` |
-| Spanish | 0.1219 | 0.3517 | 0.1565 | `medium` |
-| French | 0.1757 | 0.3676 | 0.6546 | `large-v3-turbo` |
-| Chinese | 0.1801 | 0.1097 | 0.2081 | `large-v3-turbo` |
+| Arabic | 0.1719 | 0.1017 | 0.2838 | `large-v3-turbo` |
+| English | 0.0448 | 0.1403 | 0.1287 | `large-v3` |
+| Spanish | 0.0878 | 0.1422 | 0.1566 | `large-v3-turbo` |
+| French | 0.1927 | 0.3131 | 0.6886 | `large-v3` |
+| Chinese | 0.1909 | 0.0844 | 0.2472 | `large-v3-turbo` |
+
+French is the weak point on every axis and its DER is genuine rather than
+artifactual. Arabic is *attribution*-limited: low WER (0.1719) and the lowest DER
+(0.1017), but cpWER 0.2838 — so the speaker-count experiment above should help
+Arabic most.
 
 ## 3. Best native streaming run
 
@@ -264,3 +290,11 @@ Batch source: `docs/results.md`, run `2026-07-19_gpu_baseline_v1`. Streaming
 source: run
 `2026-07-21_streaming_baseline_diart-whisperlive-segmentation3-latency2-v1`
 and its per-recording language aggregation supplied from the completed run cache.
+
+Batch figures re-verified 2026-08-03 against the run cache on the lab machine
+(`metrics/per_model/diar_by_model.csv`, `metrics/per_stack/pair_by_stack.csv`,
+`metrics/per_language/pair_by_language.csv`); the reference build was confirmed to
+use voiced-segment turns. All three reference-construction variants were written
+under the one run id `2026-07-19_gpu_baseline_v1` — see the provenance note in
+`docs/results.md`. Streaming figures are unaffected by the reference correction and
+are unchanged.
