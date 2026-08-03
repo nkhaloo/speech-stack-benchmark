@@ -58,7 +58,9 @@ def main() -> None:
     if not recordings:
         sys.exit(f"No recordings in {manifest_path}")
 
-    run_id = args.run_id or make_run_id("streaming", args.profile, args.tag)
+    # Use the config's own track (e.g. cpu_streaming), not a hardcoded
+    # "streaming" — a mislabeled run id made a real CPU run read as a smoke test.
+    run_id = args.run_id or make_run_id(cfg.get("track", "streaming"), args.profile, args.tag)
     ctx = RunContext(args.artifacts, run_id)
     print(f"Run: {run_id}\nRun folder: {ctx.run_dir}")
 
