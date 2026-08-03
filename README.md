@@ -20,7 +20,10 @@ Research stage only: no production packaging, APIs, or deployment infra.
 | [docs/licensing.md](docs/licensing.md) | Verified library + weights licenses (incl. non-commercial exclusions) |
 | [docs/datasets.md](docs/datasets.md) | Dataset design (synthetic Common Voice conversations + real anchors) |
 | [docs/methodology.md](docs/methodology.md) | Pipeline, metrics definitions, scoring settings, run layout |
-| [docs/results.md](docs/results.md) | Results & recommendations (filled after the Linux run) |
+| [docs/methodology_streaming.md](docs/methodology_streaming.md) | Streaming regime: contract, latency/stability metrics |
+| [docs/results.md](docs/results.md) | GPU batch baseline — results & recommendations |
+| [docs/benchmark_summary_batch_streaming.md](docs/benchmark_summary_batch_streaming.md) | GPU batch + streaming summary report |
+| [docs/results_cpu_streaming.md](docs/results_cpu_streaming.md) | CPU streaming track — Nemotron 3.5 arms (reduced dataset) |
 
 ## Repository layout
 
